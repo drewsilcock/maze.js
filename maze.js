@@ -376,19 +376,15 @@ function drawPlayer(x, y, style) {
     // Draw the object representing the player, currently a square.
     // Note that the box is smaller than a cell, and it is this reduced size
     // that is cleared. This is to avoid erasing the walls
-    currTopLeftX = (playerPosX + 0.5) * cellWidth - 0.5 * playerWidth;
-    currTopLeftY = (playerPosY + 0.5) * cellHeight - 0.5 * playerHeight;
 
-    // Test what's going wrong
-    currTopLeftX = playerPosX;
-    currTopLeftY = playerPosY;
+    currTopLeftX = (playerPosX + 0.5) * cellWidth - 0.51 * playerWidth;
+    currTopLeftY = (playerPosY + 0.5) * cellHeight - 0.52 * playerHeight;
+    //currTopLeftX = playerPosX  cellWidth;
+    //currTopLeftY = playerPosY  cellHeight;
 
-    console.log("playerPosX, Y:", playerPosX, playerPosY);
-    console.log("x, y:", x, y);
-    console.log("currTopLeftX, Y:", currTopLeftX, currTopLeftY);
 
     //makeWhite(currTopLeftX, currTopLeftY, cellWidth, cellHeight);
-    makeWhite(playerPosX, playerPosY, cellWidth, cellHeight);
+    makeWhite(currTopLeftX, currTopLeftY, playerWidth * 1.05, playerHeight * 1.05);
 
     playerPosX = x;
     playerPosY = y;
