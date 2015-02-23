@@ -11,7 +11,7 @@ var context = canvas.getContext("2d");
 canvas.width = window.innerWidth - 20;
 canvas.height = window.innerHeight - 20;
 
-var m = 50, n = 20;
+var m = 10, n = 10;
 
 var cellWidth = canvas.width / m;
 var cellHeight = canvas.height / n;
@@ -321,18 +321,15 @@ function unsetWalledNeighbours(neighbours, cell) {
 
     var cellval = maze[cell[0]][cell[1]];
 
-    if (cellval & 1) {
-        neighbours &= 14; // Unset left neighbour
-    }
-    if (cellval & 2) {
-        neighbours &= 13; // Unset bottom neighbour
-    }
-    if (cellval & 4) {
-        neighbours &= 11; // Unset right neighbour
-    }
-    if (cellval & 8) {
-        neighbours &= 7; // Unset top neighbour
-    }
+    // Bits representing left, bottom, right and top walls respectively
+    var wallmasks = [1, 2, 4, 8];
+
+    // Check if cell has walls and unset corresponding neighbour bit
+    wallmasks.forEach(function(mask) {
+        if (cellval & mask) {
+            neighbours &= ~mask;
+        }
+    });
 
     return neighbours;
 }
