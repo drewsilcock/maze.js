@@ -11,23 +11,12 @@ var context = canvas.getContext("2d");
 canvas.width = window.innerWidth - 20;
 canvas.height = window.innerHeight - 20;
 
-var m = 20, n = 20;
+var m = 50, n = 20;
 
 var cellWidth = canvas.width / m;
 var cellHeight = canvas.height / n;
 var playerWidth = 0.9 * cellWidth;
 var playerHeight = 0.9 * cellHeight;
-
-console.log("canvas.width, canvas.height: ", canvas.width, canvas.height);
-console.log("m, n: ", m ,n);
-console.log("cellWidth and Height: ", cellWidth, cellHeight);
-console.log("playerWidth and Height: ", playerWidth, playerHeight);
-
-//// Number of horizontal cells
-//var m = Math.floor(canvas.width / cellLength);
-//
-//// Number of vertical cells
-//var n = Math.floor(canvas.height / cellLength);
 
 var maze = createArray(m, n);
 
@@ -170,17 +159,6 @@ function knockDownWall(cell, wall) {
     maze[cell[0]][cell[1]] &= ~wallmask;
 }
 
-function isFullyWalledIn(cellbyte) {
-    // Test whether `cellbyte` corresponds to a cell that has intact walls on
-    // all sides
-
-    if (cellbyte & 15 === 15) {
-        return true;
-    }
-
-    return false;
-}
-
 function getNeighbours(visitedArray, cell) {
     // Get all unvisited neighbours of `cell` in `maze` as byte
 
@@ -220,8 +198,7 @@ function buildMaze() {
 
     totalCells = m * n;
 
-    // Create 2D array matching dimensions of maze to hold whether each cell
-    // has been visited or not, separate from main maze data structure
+    // Array containing whether each cell has been visited
     visitedArray = createArray(m, n);
 
     currentCell = [getRandomInt(0, m - 1), getRandomInt(0, n - 1)];
@@ -232,12 +209,14 @@ function buildMaze() {
         // Set this cell as visited
         visitedArray[currentCell[0]][currentCell[1]] = 1;
 
+        // Get byte describing which neighbours haven't been visited
         validNeighbours = getNeighbours(visitedArray, currentCell);
 
         if (validNeighbours === 0) {
             currentCell = cellStack.pop();
         }
         else {
+            // Choose one valid neighbour at random
             neighbour = getRandomFlag(validNeighbours);
             switch (neighbour) {
                 case 1:  // Left of original cell
@@ -274,9 +253,88 @@ function buildMaze() {
 }
 
 function solveMaze() {
-    // Marks the solution to the maze
+    // Marks the solution to the maze using similar method to construction
 
-    var i;
+    var cellStack, currentCell, visitedCells, newCell;
+    var visitedArray, unvisitedNeighbours, validNeighbours, neighbour;
+
+    // Stack to hold the cell locations
+    cellStack = new Array();
+
+    // Array containing whether each cell has been visited
+    visitedArray = createArray(m, n);
+
+    currentCell = start;
+
+    while (!(currentCell[0] === end[0] && currentCell[1] === end[1])) {
+        // Set this cell as visited
+        visitedArray[currentCell[0]][currentCell[1]] = 1;
+
+        // Get byte describing which neighbours haven't been visited
+        unvisitedNeighbours = getNeighbours(visitedArray, currentCell);
+
+        // Here we also require no intervening wall
+        validNeighbours = unsetWalledNeighbours(unvisitedNeighbours,
+                currentCell);
+
+        if (validNeighbours === 0) {
+            currentCell = cellStack.pop();
+        }
+        else {
+            // Choose one valid neighbour at random
+            neighbour = getRandomFlag(validNeighbours);
+            switch (neighbour) {
+                case 1:  // Left of original cell
+                    newCell = [currentCell[0] - 1, currentCell[1]];
+                    break;
+                case 2:  // Below original cell
+                    newCell = [currentCell[0], currentCell[1] + 1];
+                    break;
+                case 4:  // Right of original cell
+                    newCell = [currentCell[0] + 1, currentCell[1]];
+                    break;
+                case 8:  // Above original cell
+                    newCell = [currentCell[0], currentCell[1] - 1];
+                    break;
+                default:
+                    console.log("Error: Invalid choice of neighbour.");
+                    return false;
+            }
+
+            cellStack.push(currentCell);
+            currentCell = newCell;
+        }
+    }
+
+    // Push the final end tile onto the stack
+    cellStack.push(currentCell);
+
+    // Mark all cells in the stack as solution
+    for (var i = 0; i < cellStack.length; i++) {
+        maze[cellStack[i][0]][cellStack[i][1]] |= 256;
+    }
+}
+
+function unsetWalledNeighbours(neighbours, cell) {
+    // Unset all flags in byte `neighbours` where there's a wall between `cell`
+    // and that neighbour
+
+    var cellval = maze[cell[0]][cell[1]];
+
+    if (cellval & 1) {
+        neighbours &= 14; // Unset left neighbour
+    }
+    if (cellval & 2) {
+        neighbours &= 13; // Unset bottom neighbour
+    }
+    if (cellval & 4) {
+        neighbours &= 11; // Unset right neighbour
+    }
+    if (cellval & 8) {
+        neighbours &= 7; // Unset top neighbour
+    }
+
+    return neighbours;
 }
 
 function drawMaze() {
@@ -285,14 +343,12 @@ function drawMaze() {
     makeWhite(0, 0, canvas.width, canvas.height);
 
     // Draw the boundaries twice for consistent thickness with walls
-    drawLine([cellWidth, 0], [m * cellWidth, 0]);
-    drawLine([cellWidth, 0], [m * cellWidth, 0]);
-    drawLine([0, 0], [0, n * cellHeight]);
-    drawLine([0, 0], [0, n * cellHeight]);
-    drawLine([m * cellWidth, 0], [m * cellWidth, n * cellHeight]);
-    drawLine([m * cellWidth, 0], [m * cellWidth, n * cellHeight]);
-    drawLine([0, n * cellHeight], [(m - 1) * cellWidth, n * cellHeight]);
-    drawLine([0, n * cellHeight], [(m - 1) * cellWidth, n * cellHeight]);
+    for (var i = 0; i < 2; i++) {
+        drawLine([cellWidth, 0], [m * cellWidth, 0]);
+        drawLine([0, 0], [0, n * cellHeight]);
+        drawLine([m * cellWidth, 0], [m * cellWidth, n * cellHeight]);
+        drawLine([0, n * cellHeight], [(m - 1) * cellWidth, n * cellHeight]);
+    }
 
     // Draw the walls
     for (var i = 0; i < m; i++) {
@@ -303,13 +359,13 @@ function drawMaze() {
     }
 }
 
-function drawSolution(maze, m, n) {
+function drawSolution() {
     // Draw the solution to the maze
 
     for (var i = 0; i < m; i++) {
         for (var j = 0; j < n; j++) {
-            if (maze[i][j] & 3840) {
-                highlightCell([i,j], "#00FF00");
+            if (maze[i][j] & 256) {
+                highlightCell([i,j], "#FF0000");
             }
         }
     }
@@ -319,8 +375,8 @@ function highlightCell(cell, style) {
     // Highlight `cell` with `style`
 
     context.beginPath();
-    context.rect(cell[0] * cellWidth, cell[1] * cellHeight,
-            cellWidth, cellHeight);
+    context.rect((cell[0] + 0.1) * cellWidth, (cell[1] + 0.1) * cellHeight,
+            cellWidth * 0.8, cellHeight * 0.8);
     context.closePath();
     context.fillStyle = style;
     context.fill();
@@ -374,17 +430,15 @@ function makeWhite(x, y, width, height) {
 
 function drawPlayer(x, y, style) {
     // Draw the object representing the player, currently a square.
-    // Note that the box is smaller than a cell, and it is this reduced size
-    // that is cleared. This is to avoid erasing the walls
+    // Note that a reduced cell is cleared to avoid erasing the walls.
+    // The annoying factors of 0.52 and 1.04 are simply to correct for tiny
+    // errors in multiplication
 
-    currTopLeftX = (playerPosX + 0.5) * cellWidth - 0.51 * playerWidth;
-    currTopLeftY = (playerPosY + 0.5) * cellHeight - 0.52 * playerHeight;
-    //currTopLeftX = playerPosX  cellWidth;
-    //currTopLeftY = playerPosY  cellHeight;
+    currTopLeftX = (playerPosX + 0.5) * cellWidth - 0.53 * playerWidth;
+    currTopLeftY = (playerPosY + 0.5) * cellHeight - 0.53 * playerHeight;
 
-
-    //makeWhite(currTopLeftX, currTopLeftY, cellWidth, cellHeight);
-    makeWhite(currTopLeftX, currTopLeftY, playerWidth * 1.05, playerHeight * 1.05);
+    makeWhite(currTopLeftX, currTopLeftY,
+            playerWidth * 1.06, playerHeight * 1.06);
 
     playerPosX = x;
     playerPosY = y;
@@ -491,6 +545,8 @@ initialiseMaze();
 setBorders();
 buildMaze();
 drawMaze();
+solveMaze();
+drawSolution();
 
 drawPlayer(start[0], start[1], "#00FF00");
 
