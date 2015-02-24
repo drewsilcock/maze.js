@@ -1,28 +1,69 @@
 // Author: Drew Silcock
 // TODO:
-// * Make canvas respond to changes in window size
-// * Allow touch devices to moze player
+// * Add timer
+// * Add difficulty option
+// * Animate movement
+// * Add ghosts that you have to avoid
 
+var touchCapable = 'ontouchstart' in document.documentElement;
+
+// Canvas variables
 var canvas = document.getElementById("canvas");
 var context = canvas.getContext("2d");
 
 canvas.width = window.innerWidth - 20;
 canvas.height = window.innerHeight - 20;
 
+// Maze variables
 var m = 10, n = 10;
 
-var cellWidth = canvas.width / m;
-var cellHeight = canvas.height / n;
-var playerWidth = 0.85 * cellWidth;
-var playerHeight = 0.85 * cellHeight;
+var cellWidth, cellHeight, playerWidth, playerHeight;
+
+cellWidth = canvas.width / m;
+cellHeight = canvas.height / n;
+playerWidth = 0.85 * cellWidth;
+playerHeight = 0.85 * cellHeight;
 
 var maze = createArray(m, n);
 
-var playerPosX = 0;
-var playerPosY = 0;
+var playerPosX, playerPosY;
 
 var start = [0, 0];
 var end = [m - 1, n - 1];
+
+var hasStarted, hasWon;
+
+// Game counters
+
+var solutionCounter, solutionTotal;
+var randomCounter, randomTotal;
+
+// Colour definitions
+
+var playerColour = "#F3413E";
+var playerTrimColour = "#A62F2D";
+
+var solutionFillColour = "#FFCC00";
+var solutionStrokeColour = "#CCA300";
+var randomFillColour = "#40FA39";
+var randomStrokeColour = "#2AB325";
+
+var messageFillColour = "#90EBF0";
+var messageStrokeColour = "blue";
+
+var endFillColour = "#E739FA";
+var endStrokeColour = "#A028AD";
+
+var upColour = "#F2B01F";
+var downColour = "#73F175";
+var leftColour = "#73CDF1";
+var rightColour = "#E773F1";
+
+initialiseGame();
+
+// --------------------------------------
+// Useful function for creating 2D arrays
+// --------------------------------------
 
 function createArray(width, height) {
     // Creates an m by n array
@@ -39,6 +80,10 @@ function createArray(width, height) {
 
     return arr;
 }
+
+// -----------------------------------------
+// The maze generation and solving functions
+// -----------------------------------------
 
 function initialiseMaze() {
     // Initialise the m by n maze with all walls up
@@ -74,6 +119,7 @@ function initialiseMaze() {
     return maze;
 }
 
+// TODO: Consider removing this altogether
 function setBorders() {
     // Set flags for borders and walls on edge of maze
 
@@ -199,7 +245,7 @@ function buildMaze() {
     // Array containing whether each cell has been visited
     visitedArray = createArray(m, n);
 
-    currentCell = [getRandomInt(0, m - 1), getRandomInt(0, n - 1)];
+    currentCell = getRandomCell();
 
     visitedCells = 1;
 
@@ -304,11 +350,17 @@ function solveMaze() {
         }
     }
 
-    // Push the final end tile onto the stack
-    cellStack.push(currentCell);
+    // Remove the first element, starting point, which is special
+    cellStack.splice(0, 1);
+
+    // Experimental: Have only every other solution counter
+    for (var i = 0; i < cellStack.length; i++) {
+        cellStack.splice(i, 1);
+    }
 
     // Mark all cells in the stack as solution
     for (var i = 0; i < cellStack.length; i++) {
+        solutionTotal++;
         maze[cellStack[i][0]][cellStack[i][1]] |= 256;
     }
 }
@@ -332,171 +384,54 @@ function unsetWalledNeighbours(neighbours, cell) {
     return neighbours;
 }
 
-function drawMaze() {
-    // Draw the produced maze to the canvas
+function placeRandomCounters() {
+    // Place random counters that the players needs to pick up throughout the
+    // maze
 
-    makeWhite(0, 0, canvas.width, canvas.height);
+    // One fifth as many random counters to pick up as solution counters
+    randomTotal = Math.ceil(solutionTotal / 5);
 
-    // Draw the boundaries twice for consistent thickness with walls
-    for (var i = 0; i < 2; i++) {
-        drawLine([cellWidth, 0], [m * cellWidth, 0]);
-        drawLine([0, 0], [0, n * cellHeight]);
-        drawLine([m * cellWidth, 0], [m * cellWidth, n * cellHeight]);
-        drawLine([0, n * cellHeight], [(m - 1) * cellWidth, n * cellHeight]);
-    }
+    var i = 0;
+    while (i < randomTotal) {
+        cell = getRandomCell();
 
-    // Draw the walls
-    for (var i = 0; i < m; i++) {
-        for (var j = 0; j < n; j++) {
-            cell = [i, j];
-            drawWalls(cell);
+        if (validRandomCounterCell(cell)) {
+            maze[cell[0]][cell[1]] |= 512;
+            i++;
         }
     }
 }
 
-function drawSolution() {
-    // Draw the solution to the maze
+function validRandomCounterCell(cell) {
+    // Check whether `cell` is valid for placing a random counter at
 
-    for (var i = 0; i < m; i++) {
-        for (var j = 0; j < n; j++) {
-            if (maze[i][j] & 256) {
-                radius = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
-
-                context.beginPath();
-                context.arc((i + 0.5) * cellWidth, (j + 0.5) * cellHeight,
-                        radius, 0, 2 * Math.PI, false);
-                context.fillStyle = "#FFCC00";
-                context.fill();
-                context.linewidth = 5;
-                context.strokeStyle = "#CCA300";
-                context.stroke();
-            }
-        }
-    }
-}
-
-function highlightCell(cell, fillStyle) {
-    // Highlight `cell` with `fillStyle`
-
-    context.beginPath();
-    context.rect((cell[0] + 0.1) * cellWidth, (cell[1] + 0.1) * cellHeight,
-            cellWidth * 0.8, cellHeight * 0.8);
-    context.closePath();
-    context.fillStyle = fillStyle;
-    context.fill();
-}
-
-function drawWalls(cell) {
-    // Draws all existing walls around the cell at position `cell` of `maze`
-
-    cellval = maze[cell[0]][cell[1]];
-
-    if (cellval & 1) {  // Left wall present
-        drawLine([cell[0] * cellWidth, cell[1] * cellHeight],
-                 [cell[0] * cellWidth, (cell[1] + 1) * cellHeight]);
+    // Make sure it's not the start point
+    if (cell[0] === start[0] && cell[1] === start[1]) {
+        return false;
     }
 
-    if (cellval & 2) { // Bottom wall present
-        drawLine([cell[0] * cellWidth, (cell[1] + 1) * cellHeight],
-                 [(cell[0] + 1) * cellWidth, (cell[1] + 1) * cellHeight]);
+    // Make sure it's not the end point
+    if (cell[0] === end[0] && cell[1] === end[1]) {
+        return false;
     }
 
-    if (cellval & 4) { // Right wall present
-        drawLine([(cell[0] + 1) * cellWidth, cell[1] * cellHeight],
-                 [(cell[0] + 1) * cellWidth, (cell[1] + 1) * cellHeight]);
+    // Make sure there's not already a solution counter there
+    if (maze[cell[0]][cell[1]] & 256) {
+        return false;
     }
 
-    if (cellval & 8) { // Top wall present
-        drawLine([cell[0] * cellWidth, cell[1] * cellHeight],
-                 [(cell[0] + 1) * cellWidth, cell[1] * cellHeight]);
-    }
+    return true;
 }
 
-function drawLine(startPos, endPos, strokeStyle) {
-    // Draws a line from point startPos = [startPosX, startPosY] to
-    // endPos = [endPosX, endPosY]
+function getRandomCell() {
+    // Get a random cell in the maze
 
-    context.beginPath();
-    context.moveTo(startPos[0], startPos[1]);
-    context.lineTo(endPos[0], endPos[1]);
-    context.strokeStyle = strokeStyle;
-    context.stroke();
-    context.strokeStyle = "black";
+    return [getRandomInt(0, m - 1), getRandomInt(0, n - 1)];
 }
 
-function drawRect(x, y, width, height, fillStyle, strokeStyle) {
-    context.beginPath();
-    context.rect(x, y, width, height);
-    context.closePath();
-    context.fillStyle = fillStyle || "white";
-    context.fill();
-    context.strokeStyle = strokeStyle || "white";
-    context.stroke();
-}
-
-function drawRectBorder(x, y, width, height, strokeStyle, lineWidth) {
-    context.beginPath();
-    context.rect(x, y, width, height);
-    context.closePath();
-    context.strokeStyle = strokeStyle || "white";
-    context.lineWidth = 5;
-    context.stroke();
-}
-
-function makeWhite(x, y, width, height) {
-    drawRect(x, y, width, height);
-}
-
-function drawPlayer(x, y) {
-    // Draw the object representing the player, currently a square.
-    // Note that a reduced cell is cleared to avoid erasing the walls.
-    // The annoying factors of 0.52 and 1.04 are simply to correct for tiny
-    // errors in multiplication
-
-    currTopLeftX = (playerPosX + 0.5) * cellWidth - 0.53 * playerWidth;
-    currTopLeftY = (playerPosY + 0.5) * cellHeight - 0.53 * playerHeight;
-
-    makeWhite(currTopLeftX, currTopLeftY,
-        playerWidth * 1.06, playerHeight * 1.06);
-
-    if (touchCapable) {
-        context.globalAlpha = 0.2;
-        drawRect(currTopLeftX, currTopLeftY,
-            playerWidth * 1.06, playerHeight * 1.06, "#FFFFCC", "#FFFFCC");
-        context.globalAlpha = 1;
-
-        for (var i = 0; i < 4; i++) {
-
-            drawLine([0, 0], [canvas.width, 0], "#B2B28F");
-            drawLine([0, 0], [0, canvas.height], "#B2B28F");
-            drawLine([0, canvas.height], [canvas.width, canvas.height],
-                    "#B2B28F");
-            drawLine([canvas.width, 0], [canvas.width, canvas.height],
-                    "#B2B28F");
-            drawLine([0, 0.25 * canvas.height],
-                    [canvas.width, 0.25 * canvas.height], "#B2B28F");
-            drawLine([0, 0.75 * canvas.height],
-                    [canvas.width, 0.75 * canvas.height], "#B2B28F");
-            drawLine([0.5 * canvas.width, 0.25 * canvas.height],
-                    [0.5 * canvas.width, 0.75 * canvas.height], "#B2B28F");
-        }
-    }
-
-    playerPosX = x;
-    playerPosY = y;
-
-    newTopLeftX = (x + 0.5) * cellWidth - 0.5 * playerWidth;
-    newTopLeftY = (y + 0.5) * cellHeight - 0.5 * playerHeight;
-
-    context.beginPath();
-    context.rect(newTopLeftX, newTopLeftY, playerWidth, playerHeight);
-    context.closePath();
-    context.fillStyle = playerColour;
-    context.fill();
-    context.lineWidth = 2;
-    context.strokeStyle = playerTrimColour || "white";
-    context.stroke();
-}
+// -----------------------------
+// The player movement functions
+// -----------------------------
 
 function movePlayerKeyboard(evt) {
     // Check whether the player can move to the location specified by keyboard
@@ -577,21 +512,55 @@ function movePlayerTouch(evt) {
 
 function movePlayer(canMove, newX, newY) {
     if (canMove) {  // Can move
-        drawPlayer(newX, newY);
+        hasStarted = true;
+
+        checkCounters(newX, newY);
+
+        drawAll(newX, newY);
         playerPosX = newX;
         playerPosY = newY;
     }
-    if (playerPosX === end[0] && playerPosY === end[1]) {  // Reached end point
-        drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 100,
-                "#90EBF0", "blue");
-        context.font = "40px Arial";
-        context.fillStyle = "blue";
-        context.textAlign = "center";
-        context.textBaseline = "middle";
-        context.fillText("Congratulations!",
-                canvas.width / 2, canvas.height / 2);
+    if (playerPosX === end[0] && playerPosY === end[1] &&
+            hasCollectedAllCounters()) {
+        // Remove the movement event listeners
         window.removeEventListener("keydown", movePlayerKeyboard, true);
         window.removeEventListener("touchstart", movePlayerTouch, true);
+
+        hasWon = true;
+        drawAll(playerPosX, playerPosY);
+
+        // Set event listener so player can restart game
+        window.addEventListener("keydown", restartGame, true);
+    }
+}
+
+function hasCollectedAllCounters() {
+    // Check whether the player has collected all counters
+
+    if (solutionCounter === solutionTotal && randomCounter === randomTotal) {
+        return true;
+    }
+
+    return false;
+}
+
+function checkCounters(x, y) {
+    // Check whether there are any counters at (`x`,`y`)
+
+    if (maze[x][y] & 256) {
+        // Sitting on solution counter
+        solutionCounter++;
+
+        // Unset cell solution marker
+        maze[x][y] &= ~256;
+    }
+
+    if (maze[x][y] & 512) {
+        // Sitting on random counter
+        randomCounter++;
+
+        // Unset cell random counter
+        maze[x][y] &= ~512;
     }
 }
 
@@ -626,42 +595,325 @@ function canMoveTo(direction) {
     return true;
 }
 
-if (touchCapable) {
-}
+function restartGame(evt) {
+    // Remove the listener post-win restart listener and re-initliase the game
 
-// NOTE: Do I need to keep track of borders at all?
-initialiseMaze();
-setBorders();
-buildMaze();
-drawMaze();
-solveMaze();
-drawSolution();
-
-playerColour = "#F3413E";
-playerTrimColour = "#A62F2D";
-
-drawPlayer(start[0], start[1]);
-
-var touchCapable = ('ontouchstart' in document.documentElement);
-
-if (touchCapable) {
-    context.globalAlpha = 0.2;
-    drawRect(0, 0, canvas.width, canvas.height, "#FFFFCC", "#FFFFCC");
-    context.globalAlpha = 1;
-
-    for (var i = 0; i < 4; i++) {
-        drawLine([0, 0], [canvas.width, 0], "#B2B28F");
-        drawLine([0, 0], [0, canvas.height], "#B2B28F");
-        drawLine([0, canvas.height], [canvas.width, canvas.height], "#B2B28F");
-        drawLine([canvas.width, 0], [canvas.width, canvas.height], "#B2B28F");
-        drawLine([0, 0.25 * canvas.height], [canvas.width, 0.25 * canvas.height],
-                "#B2B28F");
-        drawLine([0, 0.75 * canvas.height], [canvas.width, 0.75 * canvas.height],
-                "#B2B28F");
-        drawLine([0.5 * canvas.width, 0.25 * canvas.height],
-                [0.5 * canvas.width, 0.75 * canvas.height], "#B2B28F");
+    if (evt.keyCode === 13) {
+        window.removeEventListener("keydown", restartGame, true);
+        initialiseGame();
     }
 }
 
-window.addEventListener("keydown", movePlayerKeyboard, true);
-window.addEventListener("touchstart", movePlayerTouch, true);
+// ----------------------
+// The drawing functions
+// ----------------------
+
+function drawMaze() {
+    // Draw the produced maze to the canvas
+
+    // Draw the boundaries twice for consistent thickness with walls
+    for (var i = 0; i < 2; i++) {
+        drawLine([cellWidth, 0], [m * cellWidth, 0]);
+        drawLine([0, 0], [0, n * cellHeight]);
+        drawLine([m * cellWidth, 0], [m * cellWidth, n * cellHeight]);
+        drawLine([0, n * cellHeight], [(m - 1) * cellWidth, n * cellHeight]);
+    }
+
+    // Draw the walls
+    for (var i = 0; i < m; i++) {
+        for (var j = 0; j < n; j++) {
+            cell = [i, j];
+            drawWalls(cell);
+        }
+    }
+}
+
+function drawCounters() {
+    // Draw the solution and random counters to the maze
+
+    radius = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
+
+    context.lineWidth = 5;
+
+    for (var i = 0; i < m; i++) {
+        for (var j = 0; j < n; j++) {
+            if (maze[i][j] & 256) {
+                // Draw solution counters
+                drawCircle((i + 0.5) * cellWidth, (j + 0.5) * cellHeight,
+                        radius, solutionFillColour, solutionStrokeColour);
+            }
+            if (maze[i][j] & 512) {
+                // Draw random counters
+                drawCircle((i + 0.5) * cellWidth, (j + 0.5) * cellHeight,
+                        radius, randomFillColour, randomStrokeColour);
+            }
+        }
+    }
+
+    context.lineWidth = 1;
+}
+
+function drawCircle(x, y, radius, fillStyle, strokeStyle) {
+    // Draw a circle of radius `radius` centred on point (`x`, `y`)
+
+    context.beginPath();
+    context.arc(x, y, radius, 0, 2 * Math.PI, false);
+    context.fillStyle = fillStyle;
+    context.fill();
+    context.strokeStyle = strokeStyle;
+    context.stroke();
+}
+
+function drawEnd() {
+    // Draw the start and end points as specially coloured circles
+
+    radius = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
+
+    drawCircle((end[0] + 0.5) * cellWidth, (end[1] + 0.5) * cellHeight,
+            radius, endFillColour, endStrokeColour, 5);
+}
+
+function drawWalls(cell) {
+    // Draws all existing walls around the cell at position `cell` of `maze`
+
+    cellval = maze[cell[0]][cell[1]];
+
+    if (cellval & 1) {  // Left wall present
+        drawLine([cell[0] * cellWidth, cell[1] * cellHeight],
+                 [cell[0] * cellWidth, (cell[1] + 1) * cellHeight]);
+    }
+
+    if (cellval & 2) { // Bottom wall present
+        drawLine([cell[0] * cellWidth, (cell[1] + 1) * cellHeight],
+                 [(cell[0] + 1) * cellWidth, (cell[1] + 1) * cellHeight]);
+    }
+
+    if (cellval & 4) { // Right wall present
+        drawLine([(cell[0] + 1) * cellWidth, cell[1] * cellHeight],
+                 [(cell[0] + 1) * cellWidth, (cell[1] + 1) * cellHeight]);
+    }
+
+    if (cellval & 8) { // Top wall present
+        drawLine([cell[0] * cellWidth, cell[1] * cellHeight],
+                 [(cell[0] + 1) * cellWidth, cell[1] * cellHeight]);
+    }
+}
+
+function drawLine(startPos, endPos) {
+    // Draws a line from point startPos = [startPosX, startPosY] to
+    // endPos = [endPosX, endPosY]
+
+    context.beginPath();
+    context.moveTo(startPos[0], startPos[1]);
+    context.lineTo(endPos[0], endPos[1]);
+    context.stroke();
+}
+
+function drawRect(x, y, width, height, fillStyle, strokeStyle) {
+    context.beginPath();
+    context.rect(x, y, width, height);
+    context.closePath();
+    context.fillStyle = fillStyle || "white";
+    context.fill();
+    context.strokeStyle = strokeStyle || "white";
+    context.stroke();
+}
+
+function drawRectBorder(x, y, width, height, strokeStyle, lineWidth) {
+    context.beginPath();
+    context.rect(x, y, width, height);
+    context.closePath();
+    context.strokeStyle = strokeStyle || "white";
+    context.lineWidth = 5;
+    context.stroke();
+}
+
+function makeWhite(x, y, width, height) {
+    drawRect(x, y, width, height);
+}
+
+function drawTouchControls() {
+    // Draws coloured rectangles showing the touch screen control areas
+
+    context.globalAlpha = 0.2;
+
+    drawRect(0, 0, canvas.width, 0.25 * canvas.height, upColour, upColour);
+    drawRect(0, 0.75 * canvas.height, canvas.width, 0.25 * canvas.height,
+            downColour, downColour);
+    drawRect(0, 0.25 * canvas.height, 0.5 * canvas.width, 0.5 * canvas.height,
+            leftColour, leftColour);
+    drawRect(0.5 * canvas.width, 0.25 * canvas.height,
+            0.5 * canvas.width, 0.5 * canvas.height, rightColour, rightColour);
+
+    context.globalAlpha = 1;
+}
+
+function drawPlayer(x, y) {
+    // Draw the object representing the player, currently a square.
+    // Note that a reduced cell is cleared to avoid erasing the walls.
+
+    currTopLeftX = (playerPosX + 0.5) * cellWidth - 0.5 * playerWidth;
+    currTopLeftY = (playerPosY + 0.5) * cellHeight - 0.5 * playerHeight;
+
+    playerPosX = x;
+    playerPosY = y;
+
+    newTopLeftX = (x + 0.5) * cellWidth - 0.5 * playerWidth;
+    newTopLeftY = (y + 0.5) * cellHeight - 0.5 * playerHeight;
+
+    context.beginPath();
+    context.rect(newTopLeftX, newTopLeftY, playerWidth, playerHeight);
+    context.closePath();
+    context.fillStyle = playerColour || "black";
+    context.fill();
+    context.lineWidth = 2;
+    context.strokeStyle = playerTrimColour || "white";
+    context.stroke();
+    context.lineWidth = 1;
+}
+
+function drawKeyboardStartMessage() {
+    drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 100,
+            messageFillColour, messageStrokeColour);
+    context.font = "20px Arial";
+    context.fillStyle = messageStrokeColour;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("Use WASD to navigate the maze",
+            canvas.width / 2, canvas.height / 2);
+}
+
+function drawTouchStartMessage() {
+    drawRect(canvas.width / 2 - 300, canvas.height / 2 - 50, 600, 100,
+            messageFillColour, messageStrokeColour);
+    context.font = "20px Arial";
+    context.fillStyle = messageStrokeColour;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("Touch the top, left, right and bottom sections of the screen to move",
+            canvas.width / 2, canvas.height / 2);
+}
+
+function drawStartMessage() {
+    if (touchCapable) {
+        drawTouchStartMessage();
+    } else {
+        drawKeyboardStartMessage();
+    }
+}
+
+function drawEndMessage() {
+    drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
+            messageFillColour, messageStrokeColour);
+    context.font = "40px Arial";
+    context.fillStyle = messageStrokeColour;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("Congratulations!", canvas.width / 2, canvas.height / 2);
+    context.font = "20px Arial";
+    context.fillText("Press 'Enter' to play again", canvas.width / 2, canvas.height / 2 + 50);
+}
+
+function drawCounterTallies() {
+    // Draws box stating number of counters picked up
+
+    if (solutionCounter != solutionTotal) {
+        context.globalAlpha = 0.5;
+    }
+
+    drawRect(canvas.width - 80, 5, 75, 50,
+            solutionFillColour, solutionStrokeColour);
+    context.font = "20px Arial";
+    context.fillStyle = solutionStrokeColour;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(solutionCounter + " / " + solutionTotal,
+            canvas.width - 42.5, 30);
+
+    context.globalAlpha = 1;
+
+    if (randomCounter != randomTotal) {
+        context.globalAlpha = 0.5;
+    }
+
+    drawRect(canvas.width - 80, 60, 75, 50,
+            randomFillColour, randomStrokeColour);
+    context.fillStyle = randomStrokeColour;
+    context.fillText(randomCounter + " / " + randomTotal,
+            canvas.width - 42.5, 90);
+
+    context.globalAlpha = 1;
+}
+
+function drawAll(x, y) {
+    // Redraws the whole maze, the controls and the player at position `x`, `y`
+    //makeWhite(0, 0, canvas.width, canvas.height);
+
+    canvas.width = canvas.width;
+    canvas.height = canvas.height;
+
+    drawMaze();
+    drawCounters();
+    drawEnd();
+    drawPlayer(x, y);
+    drawCounterTallies();
+
+    if (touchCapable) {
+        drawTouchControls();
+    }
+
+    if (!hasStarted) {
+        drawStartMessage();
+    }
+
+    if (hasWon) {
+        drawEndMessage();
+    }
+}
+
+function resizeCanvas() {
+    // Changes canvas size to be equal to window size
+
+    canvas.width = window.innerWidth - 20;
+    canvas.height = window.innerHeight - 20;
+
+    cellWidth = canvas.width / m;
+    cellHeight = canvas.height / n;
+    playerWidth = 0.85 * cellWidth;
+    playerHeight = 0.85 * cellHeight;
+
+    drawAll(playerPosX, playerPosY);
+}
+
+// ---------------------------------------------------------------------
+// Function to initialise the maze, draw all the elements and set up the
+// event listeners for movement
+// ---------------------------------------------------------------------
+
+function initialiseGame() {
+    // Reset, build and solve maze, then draw all elements and set listeners
+
+    playerPosX = 0;
+    playerPosY = 0;
+
+    hasStarted = false;
+    hasWon = false;
+
+    solutionCounter = 0;
+    solutionTotal = 0;
+
+    randomCounter = 0;
+    randomTotal = 0;
+
+    initialiseMaze();
+    setBorders();
+    buildMaze();
+    solveMaze();
+    placeRandomCounters();
+
+    drawAll(start[0], start[1]);
+
+    window.addEventListener("keydown", movePlayerKeyboard, true);
+    window.addEventListener("touchstart", movePlayerTouch, true);
+    window.addEventListener("resize", resizeCanvas, false);
+}
