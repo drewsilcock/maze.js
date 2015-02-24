@@ -1,9 +1,7 @@
 // Author: Drew Silcock
 // TODO:
-// * Consider removing altogether the byte for backtrack information
-// * Implement a maze solver that marks the solution path
-// * Change drawing so that playerWidth and playerHeight are different
-// * Make the canvas always fill the screen and adjust variables accordingly
+// * Make canvas respond to changes in window size
+// * Allow touch devices to moze player
 
 var canvas = document.getElementById("canvas");
 var context = canvas.getContext("2d");
@@ -15,8 +13,8 @@ var m = 10, n = 10;
 
 var cellWidth = canvas.width / m;
 var cellHeight = canvas.height / n;
-var playerWidth = 0.9 * cellWidth;
-var playerHeight = 0.9 * cellHeight;
+var playerWidth = 0.85 * cellWidth;
+var playerHeight = 0.85 * cellHeight;
 
 var maze = createArray(m, n);
 
@@ -362,20 +360,29 @@ function drawSolution() {
     for (var i = 0; i < m; i++) {
         for (var j = 0; j < n; j++) {
             if (maze[i][j] & 256) {
-                highlightCell([i,j], "#FF0000");
+                radius = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
+
+                context.beginPath();
+                context.arc((i + 0.5) * cellWidth, (j + 0.5) * cellHeight,
+                        radius, 0, 2 * Math.PI, false);
+                context.fillStyle = "#FFCC00";
+                context.fill();
+                context.linewidth = 5;
+                context.strokeStyle = "#CCA300";
+                context.stroke();
             }
         }
     }
 }
 
-function highlightCell(cell, style) {
-    // Highlight `cell` with `style`
+function highlightCell(cell, fillStyle) {
+    // Highlight `cell` with `fillStyle`
 
     context.beginPath();
     context.rect((cell[0] + 0.1) * cellWidth, (cell[1] + 0.1) * cellHeight,
             cellWidth * 0.8, cellHeight * 0.8);
     context.closePath();
-    context.fillStyle = style;
+    context.fillStyle = fillStyle;
     context.fill();
 }
 
@@ -405,27 +412,42 @@ function drawWalls(cell) {
     }
 }
 
-function drawLine(startPos, endPos, style) {
+function drawLine(startPos, endPos, strokeStyle) {
     // Draws a line from point startPos = [startPosX, startPosY] to
     // endPos = [endPosX, endPosY]
 
     context.beginPath();
     context.moveTo(startPos[0], startPos[1]);
     context.lineTo(endPos[0], endPos[1]);
-    context.strokeStyle = style;
+    context.strokeStyle = strokeStyle;
     context.stroke();
     context.strokeStyle = "black";
 }
 
-function makeWhite(x, y, width, height) {
+function drawRect(x, y, width, height, fillStyle, strokeStyle) {
     context.beginPath();
     context.rect(x, y, width, height);
     context.closePath();
-    context.fillStyle = "white";
+    context.fillStyle = fillStyle || "white";
     context.fill();
+    context.strokeStyle = strokeStyle || "white";
+    context.stroke();
 }
 
-function drawPlayer(x, y, style) {
+function drawRectBorder(x, y, width, height, strokeStyle, lineWidth) {
+    context.beginPath();
+    context.rect(x, y, width, height);
+    context.closePath();
+    context.strokeStyle = strokeStyle || "white";
+    context.lineWidth = 5;
+    context.stroke();
+}
+
+function makeWhite(x, y, width, height) {
+    drawRect(x, y, width, height);
+}
+
+function drawPlayer(x, y) {
     // Draw the object representing the player, currently a square.
     // Note that a reduced cell is cleared to avoid erasing the walls.
     // The annoying factors of 0.52 and 1.04 are simply to correct for tiny
@@ -435,7 +457,30 @@ function drawPlayer(x, y, style) {
     currTopLeftY = (playerPosY + 0.5) * cellHeight - 0.53 * playerHeight;
 
     makeWhite(currTopLeftX, currTopLeftY,
-            playerWidth * 1.06, playerHeight * 1.06);
+        playerWidth * 1.06, playerHeight * 1.06);
+
+    if (touchCapable) {
+        context.globalAlpha = 0.2;
+        drawRect(currTopLeftX, currTopLeftY,
+            playerWidth * 1.06, playerHeight * 1.06, "#FFFFCC", "#FFFFCC");
+        context.globalAlpha = 1;
+
+        for (var i = 0; i < 4; i++) {
+
+            drawLine([0, 0], [canvas.width, 0], "#B2B28F");
+            drawLine([0, 0], [0, canvas.height], "#B2B28F");
+            drawLine([0, canvas.height], [canvas.width, canvas.height],
+                    "#B2B28F");
+            drawLine([canvas.width, 0], [canvas.width, canvas.height],
+                    "#B2B28F");
+            drawLine([0, 0.25 * canvas.height],
+                    [canvas.width, 0.25 * canvas.height], "#B2B28F");
+            drawLine([0, 0.75 * canvas.height],
+                    [canvas.width, 0.75 * canvas.height], "#B2B28F");
+            drawLine([0.5 * canvas.width, 0.25 * canvas.height],
+                    [0.5 * canvas.width, 0.75 * canvas.height], "#B2B28F");
+        }
+    }
 
     playerPosX = x;
     playerPosY = y;
@@ -446,11 +491,14 @@ function drawPlayer(x, y, style) {
     context.beginPath();
     context.rect(newTopLeftX, newTopLeftY, playerWidth, playerHeight);
     context.closePath();
-    context.fillStyle = style;
+    context.fillStyle = playerColour;
     context.fill();
+    context.lineWidth = 2;
+    context.strokeStyle = playerTrimColour || "white";
+    context.stroke();
 }
 
-function movePlayer(evt) {
+function movePlayerKeyboard(evt) {
     // Check whether the player can move to the location specified by keyboard
     // input, and if so move them there. Check whether the player has won,
     // and display congratulations accordingly
@@ -489,20 +537,61 @@ function movePlayer(evt) {
             return false;
     }
 
+    movePlayer(canMove, newX, newY);
+}
+
+function movePlayerTouch(evt) {
+    // Does same as moverPlayerKeyboard, but instead of taking keyboard input,
+    // determine motion based on which section of the screen the user is touching
+
+    // We want to record only individual touches
+    evt.preventDefault();
+
+    var touchX = evt.targetTouches[0].pageX;
+    var touchY = evt.targetTouches[0].pageY;
+
+    var newX;
+    var newY;
+    var canMove;
+
+    if (touchY < 0.25 * canvas.height) {
+        newX = playerPosX;
+        newY = playerPosY - 1;
+        canMove = canMoveTo('up');
+    } else if (touchY > 0.75 * canvas.height) {
+        newX = playerPosX;
+        newY = playerPosY + 1;
+        canMove = canMoveTo('down');
+    } else if (touchX < 0.5 * canvas.width) {
+        newX = playerPosX - 1;
+        newY = playerPosY;
+        canMove = canMoveTo('left');
+    } else if (touchX > 0.5 * canvas.width) {
+        newX = playerPosX + 1;
+        newY = playerPosY;
+        canMove = canMoveTo('right');
+    }
+
+    movePlayer(canMove, newX, newY);
+}
+
+function movePlayer(canMove, newX, newY) {
     if (canMove) {  // Can move
-        drawPlayer(newX, newY, "#00FF00");
+        drawPlayer(newX, newY);
         playerPosX = newX;
         playerPosY = newY;
     }
     if (playerPosX === end[0] && playerPosY === end[1]) {  // Reached end point
-        makeWhite(0, 0, canvas.width, canvas.height);
+        drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 100,
+                "#90EBF0", "blue");
         context.font = "40px Arial";
         context.fillStyle = "blue";
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.fillText("Congratulations!",
                 canvas.width / 2, canvas.height / 2);
-        window.removeEventListener("keydown", movePlayer, true);
+        window.removeEventListener("keydown", movePlayerKeyboard, true);
+        window.removeEventListener("touchstart", movePlayerTouch, true);
     }
 }
 
@@ -537,6 +626,9 @@ function canMoveTo(direction) {
     return true;
 }
 
+if (touchCapable) {
+}
+
 // NOTE: Do I need to keep track of borders at all?
 initialiseMaze();
 setBorders();
@@ -545,6 +637,31 @@ drawMaze();
 solveMaze();
 drawSolution();
 
-drawPlayer(start[0], start[1], "#00FF00");
+playerColour = "#F3413E";
+playerTrimColour = "#A62F2D";
 
-window.addEventListener("keydown", movePlayer, true);
+drawPlayer(start[0], start[1]);
+
+var touchCapable = ('ontouchstart' in document.documentElement);
+
+if (touchCapable) {
+    context.globalAlpha = 0.2;
+    drawRect(0, 0, canvas.width, canvas.height, "#FFFFCC", "#FFFFCC");
+    context.globalAlpha = 1;
+
+    for (var i = 0; i < 4; i++) {
+        drawLine([0, 0], [canvas.width, 0], "#B2B28F");
+        drawLine([0, 0], [0, canvas.height], "#B2B28F");
+        drawLine([0, canvas.height], [canvas.width, canvas.height], "#B2B28F");
+        drawLine([canvas.width, 0], [canvas.width, canvas.height], "#B2B28F");
+        drawLine([0, 0.25 * canvas.height], [canvas.width, 0.25 * canvas.height],
+                "#B2B28F");
+        drawLine([0, 0.75 * canvas.height], [canvas.width, 0.75 * canvas.height],
+                "#B2B28F");
+        drawLine([0.5 * canvas.width, 0.25 * canvas.height],
+                [0.5 * canvas.width, 0.75 * canvas.height], "#B2B28F");
+    }
+}
+
+window.addEventListener("keydown", movePlayerKeyboard, true);
+window.addEventListener("touchstart", movePlayerTouch, true);
