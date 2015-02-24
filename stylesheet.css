@@ -3,3 +3,7 @@ html, body {
     height: 100%;
     margin: 0px;
 }
+
+#canvas-div {
+    min-height: 100%;
+}

@@ -10,9 +10,10 @@ var touchCapable = 'ontouchstart' in document.documentElement;
 // Canvas variables
 var canvas = document.getElementById("canvas");
 var context = canvas.getContext("2d");
+var canvasDiv = document.getElementById("canvas-div");
 
-canvas.width = window.innerWidth - 20;
-canvas.height = window.innerHeight - 20;
+canvas.width = canvasDiv.clientWidth - 20;
+canvas.height = canvasDiv.clientHeight - 20;
 
 // Maze variables
 var m = 10, n = 10;
@@ -874,8 +875,8 @@ function drawAll(x, y) {
 function resizeCanvas() {
     // Changes canvas size to be equal to window size
 
-    canvas.width = window.innerWidth - 20;
-    canvas.height = window.innerHeight - 20;
+    canvas.width = canvasDiv.clientWidth - 20;
+    canvas.height = canvasDiv.clientHeight - 20;
 
     cellWidth = canvas.width / m;
     cellHeight = canvas.height / n;
