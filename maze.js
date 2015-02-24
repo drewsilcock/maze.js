@@ -4,10 +4,13 @@
 // * Add difficulty option
 // * Animate movement
 // * Add ghosts that you have to avoid
+// * Remove borders byte and shift counter bits
 
 var touchCapable = 'ontouchstart' in document.documentElement;
 
+// ----------------
 // Canvas variables
+// ----------------
 var canvas = document.getElementById("canvas");
 var context = canvas.getContext("2d");
 var canvasDiv = document.getElementById("canvas-div");
@@ -15,17 +18,16 @@ var canvasDiv = document.getElementById("canvas-div");
 canvas.width = canvasDiv.clientWidth - 20;
 canvas.height = canvasDiv.clientHeight - 20;
 
+// --------------
 // Maze variables
+// --------------
 var m = 10, n = 10;
-
-var cellWidth, cellHeight, playerWidth, playerHeight;
-
-cellWidth = canvas.width / m;
-cellHeight = canvas.height / n;
-playerWidth = 0.85 * cellWidth;
-playerHeight = 0.85 * cellHeight;
-
 var maze = createArray(m, n);
+
+var cellWidth = canvas.width / m;
+var cellHeight = canvas.height / n;
+var playerWidth = 0.85 * cellWidth;
+var playerHeight = 0.85 * cellHeight;
 
 var playerPosX, playerPosY;
 
@@ -34,12 +36,27 @@ var end = [m - 1, n - 1];
 
 var hasStarted, hasWon;
 
+// -------------
 // Game counters
+// -------------
 
 var solutionCounter, solutionTotal;
 var randomCounter, randomTotal;
 
+// Radius of circles representing collectibles
+var collectRad = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
+
+// Dimensions of counter tally boxes
+var boxWidth = 75;
+var boxHeight = 50;
+
+// Spatial offsets of tally boxes
+var boxXOffset = 80;
+var boxYOffset = 5;
+
+// ------------------
 // Colour definitions
+// ------------------
 
 var playerColour = "#F3413E";
 var playerTrimColour = "#A62F2D";
@@ -59,6 +76,10 @@ var upColour = "#F2B01F";
 var downColour = "#73F175";
 var leftColour = "#73CDF1";
 var rightColour = "#E773F1";
+
+// --------------
+// Start the fun!
+// --------------
 
 initialiseGame();
 
@@ -421,6 +442,11 @@ function validRandomCounterCell(cell) {
         return false;
     }
 
+    // Make sure there's not already a random counter there
+    if (maze[cell[0]][cell[1]] & 512) {
+        return false;
+    }
+
     return true;
 }
 
@@ -612,6 +638,8 @@ function restartGame(evt) {
 function drawMaze() {
     // Draw the produced maze to the canvas
 
+    context.lineWidth = 2;
+
     // Draw the boundaries twice for consistent thickness with walls
     for (var i = 0; i < 2; i++) {
         drawLine([cellWidth, 0], [m * cellWidth, 0]);
@@ -627,12 +655,12 @@ function drawMaze() {
             drawWalls(cell);
         }
     }
+
+    context.lineWidth = 1;
 }
 
 function drawCounters() {
     // Draw the solution and random counters to the maze
-
-    radius = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
 
     context.lineWidth = 5;
 
@@ -641,12 +669,12 @@ function drawCounters() {
             if (maze[i][j] & 256) {
                 // Draw solution counters
                 drawCircle((i + 0.5) * cellWidth, (j + 0.5) * cellHeight,
-                        radius, solutionFillColour, solutionStrokeColour);
+                        collectRad, solutionFillColour, solutionStrokeColour);
             }
             if (maze[i][j] & 512) {
                 // Draw random counters
                 drawCircle((i + 0.5) * cellWidth, (j + 0.5) * cellHeight,
-                        radius, randomFillColour, randomStrokeColour);
+                        collectRad, randomFillColour, randomStrokeColour);
             }
         }
     }
@@ -668,10 +696,12 @@ function drawCircle(x, y, radius, fillStyle, strokeStyle) {
 function drawEnd() {
     // Draw the start and end points as specially coloured circles
 
-    radius = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
+    context.lineWidth = 5;
 
     drawCircle((end[0] + 0.5) * cellWidth, (end[1] + 0.5) * cellHeight,
-            radius, endFillColour, endStrokeColour, 5);
+            collectRad, endFillColour, endStrokeColour);
+
+    context.lineWidth = 1;
 }
 
 function drawWalls(cell) {
@@ -812,7 +842,8 @@ function drawEndMessage() {
     context.textBaseline = "middle";
     context.fillText("Congratulations!", canvas.width / 2, canvas.height / 2);
     context.font = "20px Arial";
-    context.fillText("Press 'Enter' to play again", canvas.width / 2, canvas.height / 2 + 50);
+    context.fillText("Press 'Enter' to play again",
+            canvas.width / 2, canvas.height / 2 + 50);
 }
 
 function drawCounterTallies() {
@@ -822,14 +853,15 @@ function drawCounterTallies() {
         context.globalAlpha = 0.5;
     }
 
-    drawRect(canvas.width - 80, 5, 75, 50,
+    drawRect(canvas.width - boxXOffset, boxYOffset, boxWidth, boxHeight,
             solutionFillColour, solutionStrokeColour);
     context.font = "20px Arial";
     context.fillStyle = solutionStrokeColour;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(solutionCounter + " / " + solutionTotal,
-            canvas.width - 42.5, 30);
+            canvas.width - boxXOffset + 0.5 * boxWidth,
+            boxYOffset + 0.5 * boxHeight);
 
     context.globalAlpha = 1;
 
@@ -837,11 +869,12 @@ function drawCounterTallies() {
         context.globalAlpha = 0.5;
     }
 
-    drawRect(canvas.width - 80, 60, 75, 50,
-            randomFillColour, randomStrokeColour);
+    drawRect(canvas.width - boxXOffset, boxHeight + 2 * boxYOffset,
+            boxWidth, boxHeight, randomFillColour, randomStrokeColour);
     context.fillStyle = randomStrokeColour;
     context.fillText(randomCounter + " / " + randomTotal,
-            canvas.width - 42.5, 90);
+            canvas.width - boxXOffset + 0.5 * boxWidth,
+            2 * boxYOffset + 1.5 * boxHeight);
 
     context.globalAlpha = 1;
 }
@@ -882,6 +915,7 @@ function resizeCanvas() {
     cellHeight = canvas.height / n;
     playerWidth = 0.85 * cellWidth;
     playerHeight = 0.85 * cellHeight;
+    collectRad = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
 
     drawAll(playerPosX, playerPosY);
 }
