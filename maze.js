@@ -1,6 +1,7 @@
 // Author: Drew Silcock
 // TODO:
 // * Add difficulty option
+// * Scale time given with difficulty
 // * Animate movement
 // * Add ghosts that you have to avoid
 // * Remove borders byte and shift counter bits
@@ -20,7 +21,7 @@ canvas.height = canvasDiv.clientHeight - 20;
 // --------------
 // Maze variables
 // --------------
-var m = 5, n = 5;
+var m = 15, n = 15;
 var maze = createArray(m, n);
 
 var cellWidth = canvas.width / m;
@@ -39,6 +40,7 @@ var playerPosX, playerPosY;
 
 var totalTime = 20;
 var timeLeft;
+var timeBoost = 5;
 var timerInterval;
 var hasStarted, hasWon, hasLost;
 
@@ -125,6 +127,13 @@ function createArray(width, height) {
 
 function initialiseMaze() {
     // Initialise the m by n maze with all walls up
+
+    // Set all cells to zero
+    for (var i = 0; i < m; i++) {
+        for (var j = 0; j < n; j++) {
+            maze[i][j] = 0;
+        }
+    }
 
     // Inside maze cells
     for (var i = 1; i < m - 1; i++) {
@@ -484,7 +493,8 @@ function movePlayerKeyboard(evt) {
     var newX;
     var newY;
     var canMove;
-    evt = evt || window.event;
+    var stillMoving = true;
+
     switch (evt.keyCode) {
         case 38:  // Arrow up key
         case 87:  // w key
@@ -511,10 +521,8 @@ function movePlayerKeyboard(evt) {
             canMove = canMoveTo('right');
             break;
         default:
-            console.log("Movement key not recognised.");
-            return false;
+            return;
     }
-
     movePlayer(canMove, newX, newY);
 }
 
@@ -611,6 +619,9 @@ function checkCounters(x, y) {
 
         // Unset cell random counter
         maze[x][y] &= ~512;
+
+        // Get more time!
+        timeLeft += timeBoost;
     }
 }
 
@@ -676,7 +687,7 @@ function createTimer() {
         if (timeLeft === 0) {
             clearInterval(timerInterval);
             hasLost = true;
-            drawLostMessage();
+            drawAll();
 
             window.removeEventListener("keydown", movePlayerKeyboard, true);
             window.removeEventListener("touchstart", movePlayerTouch, true);
@@ -1005,7 +1016,7 @@ function drawTimer(time) {
         context.fillStyle = warningFillColour;
         context.strokeStyle = warningStrokeColour;
     } else if (time <= 5) {
-        context.fillStyle = dangerStrokeColour;
+        context.fillStyle = dangerFillColour;
         context.strokeStyle = dangerStrokeColour;
     } else {
         context.fillStyle = timerFillColour;
@@ -1019,7 +1030,9 @@ function drawTimer(time) {
         secondsLeft = "0" + secondsLeft;
     }
 
-    context.globalAlpha = 0.5;
+    if (!hasWon && !hasLost) {
+        context.globalAlpha = 0.5;
+    }
 
     drawRect(canvas.width - boxXOffset, 2 * boxHeight + 3 * boxYOffset,
             boxWidth, boxHeight);
@@ -1031,6 +1044,7 @@ function drawTimer(time) {
             3 * boxYOffset + 2.5 * boxHeight);
 
     context.globalAlpha = 1;
+
 }
 
 function drawAll(x, y) {
@@ -1096,6 +1110,7 @@ function initialiseGame() {
 
     hasStarted = false;
     hasWon = false;
+    hasLost = false;
 
     solutionCounter = 0;
     solutionTotal = 0;
