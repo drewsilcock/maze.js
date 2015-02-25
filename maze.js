@@ -4,7 +4,8 @@
 // * Scale time given with difficulty
 // * Animate movement
 // * Add ghosts that you have to avoid
-// * Remove borders byte and shift counter bits
+
+"use strict";
 
 var touchCapable = 'ontouchstart' in document.documentElement;
 
@@ -166,23 +167,6 @@ function initialiseMaze() {
     return maze;
 }
 
-// TODO: Consider removing this altogether
-function setBorders() {
-    // Set flags for borders and walls on edge of maze
-
-    // Set top and bottom borders
-    for (var i = 0; i < m; i++) {
-        maze[i][0] |= 128;
-        maze[i][n - 1] |= 32;
-    }
-
-    // Set left and right border
-    for (var i = 0; i < n; i++) {
-        maze[0][i] |= 16;
-        maze[m - 1][i] |= 64;
-    }
-}
-
 function getRandomInt(min, max) {
     // Return a random integer between `min` and `max`, as per MDN docs
 
@@ -214,7 +198,7 @@ function getRandomFlag(num) {
         return false;
     }
 
-    var res;
+    var rand, res;
 
     do {
         rand = Math.pow(2, getRandomInt(0, 4));
@@ -253,7 +237,7 @@ function knockDownWall(cell, wall) {
 function getNeighbours(visitedArray, cell) {
     // Get all unvisited neighbours of `cell` in `maze` as byte
 
-    validNeighbours = 0;
+    var validNeighbours = 0;
 
     // Check left
     if ((cell[0] != 0) && (!visitedArray[cell[0] - 1][cell[1]])) {
@@ -400,15 +384,10 @@ function solveMaze() {
     // Remove the first element, starting point, which is special
     cellStack.splice(0, 1);
 
-    // Experimental: Have only every other solution counter
-    for (var i = 0; i < cellStack.length; i++) {
-        cellStack.splice(i, 1);
-    }
-
     // Mark all cells in the stack as solution
-    for (var i = 0; i < cellStack.length; i++) {
+    for (var i = 0; i < cellStack.length; i += 2) {
         solutionTotal++;
-        maze[cellStack[i][0]][cellStack[i][1]] |= 256;
+        maze[cellStack[i][0]][cellStack[i][1]] |= 16;
     }
 }
 
@@ -438,12 +417,12 @@ function placeRandomCounters() {
     // One fifth as many random counters to pick up as solution counters
     randomTotal = Math.ceil(solutionTotal / 5);
 
-    var i = 0;
+    var i = 0, cell;
     while (i < randomTotal) {
         cell = getRandomCell();
 
         if (validRandomCounterCell(cell)) {
-            maze[cell[0]][cell[1]] |= 512;
+            maze[cell[0]][cell[1]] |= 32;
             i++;
         }
     }
@@ -463,12 +442,12 @@ function validRandomCounterCell(cell) {
     }
 
     // Make sure there's not already a solution counter there
-    if (maze[cell[0]][cell[1]] & 256) {
+    if (maze[cell[0]][cell[1]] & 16) {
         return false;
     }
 
     // Make sure there's not already a random counter there
-    if (maze[cell[0]][cell[1]] & 512) {
+    if (maze[cell[0]][cell[1]] & 32) {
         return false;
     }
 
@@ -493,7 +472,6 @@ function movePlayerKeyboard(evt) {
     var newX;
     var newY;
     var canMove;
-    var stillMoving = true;
 
     switch (evt.keyCode) {
         case 38:  // Arrow up key
@@ -523,6 +501,7 @@ function movePlayerKeyboard(evt) {
         default:
             return;
     }
+
     movePlayer(canMove, newX, newY);
 }
 
@@ -605,20 +584,20 @@ function hasCollectedAllCounters() {
 function checkCounters(x, y) {
     // Check whether there are any counters at (`x`,`y`)
 
-    if (maze[x][y] & 256) {
+    if (maze[x][y] & 16) {
         // Sitting on solution counter
         solutionCounter++;
 
         // Unset cell solution marker
-        maze[x][y] &= ~256;
+        maze[x][y] &= ~16;
     }
 
-    if (maze[x][y] & 512) {
+    if (maze[x][y] & 32) {
         // Sitting on random counter
         randomCounter++;
 
         // Unset cell random counter
-        maze[x][y] &= ~512;
+        maze[x][y] &= ~32;
 
         // Get more time!
         timeLeft += timeBoost;
@@ -628,7 +607,7 @@ function checkCounters(x, y) {
 function canMoveTo(direction) {
     // Check whether player can move from point `destX` to `destY`
 
-    cellval = maze[playerPosX][playerPosY];
+    var cellval = maze[playerPosX][playerPosY];
 
     switch (direction) {
         case 'left':
@@ -720,8 +699,7 @@ function drawMaze() {
     // Draw the walls
     for (var i = 0; i < m; i++) {
         for (var j = 0; j < n; j++) {
-            cell = [i, j];
-            drawWalls(cell);
+            drawWalls([i, j]);
         }
     }
 
@@ -735,12 +713,12 @@ function drawCounters() {
 
     for (var i = 0; i < m; i++) {
         for (var j = 0; j < n; j++) {
-            if (maze[i][j] & 256) {
+            if (maze[i][j] & 16) {
                 // Draw solution counters
                 drawCircle((i + 0.5) * cellWidth, (j + 0.5) * cellHeight,
                         collectRad, solutionFillColour, solutionStrokeColour);
             }
-            if (maze[i][j] & 512) {
+            if (maze[i][j] & 32) {
                 // Draw random counters
                 drawCircle((i + 0.5) * cellWidth, (j + 0.5) * cellHeight,
                         collectRad, randomFillColour, randomStrokeColour);
@@ -776,7 +754,7 @@ function drawEnd() {
 function drawWalls(cell) {
     // Draws all existing walls around the cell at position `cell` of `maze`
 
-    cellval = maze[cell[0]][cell[1]];
+    var cellval = maze[cell[0]][cell[1]];
 
     if (cellval & 1) {  // Left wall present
         drawLine([cell[0] * cellWidth, cell[1] * cellHeight],
@@ -852,14 +830,14 @@ function drawPlayer(x, y) {
     // Draw the object representing the player, currently a square.
     // Note that a reduced cell is cleared to avoid erasing the walls.
 
-    currTopLeftX = (playerPosX + 0.5) * cellWidth - 0.5 * playerWidth;
-    currTopLeftY = (playerPosY + 0.5) * cellHeight - 0.5 * playerHeight;
+    var currTopLeftX = (playerPosX + 0.5) * cellWidth - 0.5 * playerWidth;
+    var currTopLeftY = (playerPosY + 0.5) * cellHeight - 0.5 * playerHeight;
 
     playerPosX = x;
     playerPosY = y;
 
-    newTopLeftX = (x + 0.5) * cellWidth - 0.5 * playerWidth;
-    newTopLeftY = (y + 0.5) * cellHeight - 0.5 * playerHeight;
+    var newTopLeftX = (x + 0.5) * cellWidth - 0.5 * playerWidth;
+    var newTopLeftY = (y + 0.5) * cellHeight - 0.5 * playerHeight;
 
     context.beginPath();
     context.rect(newTopLeftX, newTopLeftY, playerWidth, playerHeight);
@@ -1121,7 +1099,6 @@ function initialiseGame() {
     timeLeft = totalTime;
 
     initialiseMaze();
-    setBorders();
     buildMaze();
     solveMaze();
     placeRandomCounters();
