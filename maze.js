@@ -1,6 +1,5 @@
 // Author: Drew Silcock
 // TODO:
-// * Add timer
 // * Add difficulty option
 // * Animate movement
 // * Add ghosts that you have to avoid
@@ -21,23 +20,30 @@ canvas.height = canvasDiv.clientHeight - 20;
 // --------------
 // Maze variables
 // --------------
-var m = 10, n = 10;
+var m = 5, n = 5;
 var maze = createArray(m, n);
 
 var cellWidth = canvas.width / m;
 var cellHeight = canvas.height / n;
+var start = [0, 0];
+var end = [m - 1, n - 1];
+
+// --------------
+// Game variables
+// --------------
+
 var playerWidth = 0.85 * cellWidth;
 var playerHeight = 0.85 * cellHeight;
 
 var playerPosX, playerPosY;
 
-var start = [0, 0];
-var end = [m - 1, n - 1];
-
-var hasStarted, hasWon;
+var totalTime = 20;
+var timeLeft;
+var timerInterval;
+var hasStarted, hasWon, hasLost;
 
 // -------------
-// Game counters
+// Collectible variables
 // -------------
 
 var solutionCounter, solutionTotal;
@@ -65,17 +71,27 @@ var solutionFillColour = "#FFCC00";
 var solutionStrokeColour = "#CCA300";
 var randomFillColour = "#40FA39";
 var randomStrokeColour = "#2AB325";
+var endFillColour = "#E739FA";
+var endStrokeColour = "#A028AD";
 
 var messageFillColour = "#90EBF0";
 var messageStrokeColour = "blue";
 
-var endFillColour = "#E739FA";
-var endStrokeColour = "#A028AD";
-
+// Colours for the touchscreen areas
 var upColour = "#F2B01F";
 var downColour = "#73F175";
 var leftColour = "#73CDF1";
 var rightColour = "#E773F1";
+
+// Colours for the timer
+var timerFillColour = messageFillColour;
+var timerStrokeColour = messageStrokeColour;
+
+var warningFillColour = "#FF8400";
+var warningStrokeColour = "#8A4700";
+
+var dangerFillColour = "#FF7661";
+var dangerStrokeColour = "#C93018";
 
 // --------------
 // Start the fun!
@@ -538,6 +554,10 @@ function movePlayerTouch(evt) {
 }
 
 function movePlayer(canMove, newX, newY) {
+    if (!hasStarted) {
+        createTimer();
+    }
+
     if (canMove) {  // Can move
         hasStarted = true;
 
@@ -547,6 +567,7 @@ function movePlayer(canMove, newX, newY) {
         playerPosX = newX;
         playerPosY = newY;
     }
+
     if (playerPosX === end[0] && playerPosY === end[1] &&
             hasCollectedAllCounters()) {
         // Remove the movement event listeners
@@ -554,10 +575,12 @@ function movePlayer(canMove, newX, newY) {
         window.removeEventListener("touchstart", movePlayerTouch, true);
 
         hasWon = true;
+        clearInterval(timerInterval);
         drawAll(playerPosX, playerPosY);
 
-        // Set event listener so player can restart game
-        window.addEventListener("keydown", restartGame, true);
+        // Set event listeners so player can restart game
+        window.addEventListener("keydown", restartGameKeyboard, true);
+        window.addEventListener("touchstart", restartGameTouch, true);
     }
 }
 
@@ -622,13 +645,48 @@ function canMoveTo(direction) {
     return true;
 }
 
-function restartGame(evt) {
-    // Remove the listener post-win restart listener and re-initliase the game
+function restartGameKeyboard(evt) {
+    // Restart game upon user pressing Enter
 
     if (evt.keyCode === 13) {
-        window.removeEventListener("keydown", restartGame, true);
+        window.removeEventListener("keydown", restartGameKeyboard, true);
+        window.removeEventListener("touchstart", restartGameTouch, true);
         initialiseGame();
     }
+}
+
+function restartGameTouch(evt) {
+    // Restart game upon user touching screen
+
+    window.removeEventListener("keydown", restartGameKeyboard, true);
+    window.removeEventListener("touchstart", restartGameTouch, true);
+    initialiseGame();
+}
+
+// ------------------
+// The timer function
+// ------------------
+
+function createTimer() {
+    // Sets off a timer decrementing in seconds (1000 ms)
+
+    timerInterval = setInterval(function() {
+        timeLeft--;
+        drawAll(playerPosX, playerPosY);
+        if (timeLeft === 0) {
+            clearInterval(timerInterval);
+            hasLost = true;
+            drawLostMessage();
+
+            window.removeEventListener("keydown", movePlayerKeyboard, true);
+            window.removeEventListener("touchstart", movePlayerTouch, true);
+
+            window.addEventListener("keydown", restartGameKeyboard, true);
+            window.addEventListener("touchstart", restartGameTouch, true);
+
+            return;
+        }
+    }, 1000);
 }
 
 // ----------------------
@@ -744,9 +802,9 @@ function drawRect(x, y, width, height, fillStyle, strokeStyle) {
     context.beginPath();
     context.rect(x, y, width, height);
     context.closePath();
-    context.fillStyle = fillStyle || "white";
+    context.fillStyle = fillStyle;
     context.fill();
-    context.strokeStyle = strokeStyle || "white";
+    context.strokeStyle = strokeStyle;
     context.stroke();
 }
 
@@ -834,15 +892,74 @@ function drawStartMessage() {
 }
 
 function drawEndMessage() {
+    if (touchCapable) {
+        drawTouchEndMessage();
+    } else {
+        drawKeyboardEndMessage();
+    }
+}
+
+function drawKeyboardEndMessage() {
     drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
             messageFillColour, messageStrokeColour);
-    context.font = "40px Arial";
+    context.font = "50px Arial";
     context.fillStyle = messageStrokeColour;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText("Congratulations!", canvas.width / 2, canvas.height / 2);
     context.font = "20px Arial";
+    context.fillText("You finished with " + timeLeft + " seconds to spare.",
+            canvas.width / 2, canvas.height / 2 + 50);
+    context.fillText("Press 'Enter' to play again.",
+            canvas.width / 2, canvas.height / 2 + 75);
+}
+
+function drawTouchEndMessage() {
+    drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
+            messageFillColour, messageStrokeColour);
+    context.font = "50px Arial";
+    context.fillStyle = messageStrokeColour;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("Congratulations!", canvas.width / 2, canvas.height / 2);
+    context.font = "20px Arial";
+    context.fillText("You finished with " + timeLeft + " seconds to spare.",
+            canvas.width / 2, canvas.height / 2 + 50);
+    context.fillText("Touch the screen to play again.",
+            canvas.width / 2, canvas.height / 2 + 75);
+}
+
+function drawLostMessage() {
+    if (touchCapable) {
+        drawTouchLostMessage();
+    } else {
+        drawKeyboardLostMessage();
+    }
+}
+
+function drawKeyboardLostMessage() {
+    drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
+            dangerFillColour, dangerStrokeColour);
+    context.font = "40px Arial";
+    context.fillStyle = dangerStrokeColour;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("Time's up!", canvas.width / 2, canvas.height / 2);
+    context.font = "20px Arial";
     context.fillText("Press 'Enter' to play again",
+            canvas.width / 2, canvas.height / 2 + 50);
+}
+
+function drawTouchLostMessage() {
+    drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
+            dangerFillColour, dangerStrokeColour);
+    context.font = "40px Arial";
+    context.fillStyle = dangerStrokeColour;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("Time's up!", canvas.width / 2, canvas.height / 2);
+    context.font = "20px Arial";
+    context.fillText("Touch the screen to play again",
             canvas.width / 2, canvas.height / 2 + 50);
 }
 
@@ -879,6 +996,43 @@ function drawCounterTallies() {
     context.globalAlpha = 1;
 }
 
+function drawTimer(time) {
+    // Draws a timer displaying time
+
+    context.font = "20px Arial";
+
+    if (time <= 10 && time > 5) {
+        context.fillStyle = warningFillColour;
+        context.strokeStyle = warningStrokeColour;
+    } else if (time <= 5) {
+        context.fillStyle = dangerStrokeColour;
+        context.strokeStyle = dangerStrokeColour;
+    } else {
+        context.fillStyle = timerFillColour;
+        context.strokeStyle = timerStrokeColour;
+    }
+
+    var minutesLeft = Math.floor(time / 60).toString();
+    var secondsLeft = (time - minutesLeft * 60).toString();
+
+    if (secondsLeft.length === 1) {
+        secondsLeft = "0" + secondsLeft;
+    }
+
+    context.globalAlpha = 0.5;
+
+    drawRect(canvas.width - boxXOffset, 2 * boxHeight + 3 * boxYOffset,
+            boxWidth, boxHeight);
+
+    context.fillStyle = context.strokeStyle;
+
+    context.fillText(minutesLeft + ":" + secondsLeft,
+            canvas.width - boxXOffset + 0.5 * boxWidth,
+            3 * boxYOffset + 2.5 * boxHeight);
+
+    context.globalAlpha = 1;
+}
+
 function drawAll(x, y) {
     // Redraws the whole maze, the controls and the player at position `x`, `y`
     //makeWhite(0, 0, canvas.width, canvas.height);
@@ -891,6 +1045,7 @@ function drawAll(x, y) {
     drawEnd();
     drawPlayer(x, y);
     drawCounterTallies();
+    drawTimer(timeLeft);
 
     if (touchCapable) {
         drawTouchControls();
@@ -903,7 +1058,15 @@ function drawAll(x, y) {
     if (hasWon) {
         drawEndMessage();
     }
+
+    if (hasLost) {
+        drawLostMessage();
+    }
 }
+
+// -----------------------------
+// Dynamic sesizability function
+// -----------------------------
 
 function resizeCanvas() {
     // Changes canvas size to be equal to window size
@@ -939,6 +1102,8 @@ function initialiseGame() {
 
     randomCounter = 0;
     randomTotal = 0;
+
+    timeLeft = totalTime;
 
     initialiseMaze();
     setBorders();
