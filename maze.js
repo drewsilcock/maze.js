@@ -12,6 +12,7 @@ var touchCapable = 'ontouchstart' in document.documentElement;
 // ----------------
 // Canvas variables
 // ----------------
+
 var canvas = document.getElementById("canvas");
 var context = canvas.getContext("2d");
 var canvasDiv = document.getElementById("canvas-div");
@@ -22,6 +23,7 @@ canvas.height = canvasDiv.clientHeight - 20;
 // --------------
 // Maze variables
 // --------------
+
 var m = 15, n = 15;
 var maze = createArray(m, n);
 
@@ -29,6 +31,7 @@ var cellWidth = canvas.width / m;
 var cellHeight = canvas.height / n;
 var start = [0, 0];
 var end = [m - 1, n - 1];
+
 
 // --------------
 // Game variables
@@ -53,48 +56,48 @@ var solutionCounter, solutionTotal;
 var randomCounter, randomTotal;
 
 // Radius of circles representing collectibles
-var collectRad = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
+var circleRad = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
 
 // Dimensions of counter tally boxes
-var boxWidth = 75;
-var boxHeight = 50;
+var BOX_WIDTH = 75;
+var BOX_HEIGHT = 50;
 
 // Spatial offsets of tally boxes
-var boxXOffset = 80;
-var boxYOffset = 5;
+var BOX_OFFSET_X = 80;
+var BOX_OFFSET_Y = 5;
 
 // ------------------
 // Colour definitions
 // ------------------
 
-var playerColour = "#F3413E";
-var playerTrimColour = "#A62F2D";
+var PLAYER_COLOUR = "#F3413E";
+var PLAYER_TRIM_COLOUR = "#A62F2D";
 
-var solutionFillColour = "#FFCC00";
-var solutionStrokeColour = "#CCA300";
-var randomFillColour = "#40FA39";
-var randomStrokeColour = "#2AB325";
-var endFillColour = "#E739FA";
-var endStrokeColour = "#A028AD";
+var SOLUTION_FILL_COLOUR = "#FFCC00";
+var SOLUTION_STROKE_COLOUR = "#CCA300";
+var RANDOM_FILL_COLOUR = "#40FA39";
+var RANDOM_STROKE_COLOUR = "#2AB325";
+var END_FILL_COLOUR = "#E739FA";
+var END_STROKE_COLOUR = "#A028AD";
 
-var messageFillColour = "#90EBF0";
-var messageStrokeColour = "blue";
+var MESSAGE_FILL_COLOUR = "#90EBF0";
+var MESSAGE_STROKE_COLOUR = "blue";
 
 // Colours for the touchscreen areas
-var upColour = "#F2B01F";
-var downColour = "#73F175";
-var leftColour = "#73CDF1";
-var rightColour = "#E773F1";
+var UP_COLOUR = "#F2B01F";
+var DOWN_COLOUR = "#73F175";
+var LEFT_COLOUR = "#73CDF1";
+var RIGHT_COLOUR = "#E773F1";
 
 // Colours for the timer
-var timerFillColour = messageFillColour;
-var timerStrokeColour = messageStrokeColour;
+var TIMER_FILL_COLOUR = MESSAGE_FILL_COLOUR;
+var TIMER_STROKE_COLOUR = MESSAGE_STROKE_COLOUR;
 
-var warningFillColour = "#FF8400";
-var warningStrokeColour = "#8A4700";
+var WARNING_FILL_COLOUR = "#FF8400";
+var WARNING_STROKE_COLOUR = "#8A4700";
 
-var dangerFillColour = "#FF7661";
-var dangerStrokeColour = "#C93018";
+var DANGER_FILL_COLOUR = "#FF7661";
+var DANGER_STROKE_COLOUR = "#C93018";
 
 // --------------
 // Start the fun!
@@ -165,101 +168,6 @@ function initialiseMaze() {
     maze[m - 1][n - 1] |= 9;  // Bottom right corner
 
     return maze;
-}
-
-function getRandomInt(min, max) {
-    // Return a random integer between `min` and `max`, as per MDN docs
-
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function countFlags(num) {
-    // Count the number of set flags (i.e. 1's) in a binary number
-
-    var numFlags = 0;
-
-    while (num > 0) {
-        if (num & 1) {
-            numFlags++;
-        }
-
-        num >>= 1;
-    }
-
-    return numFlags;
-}
-
-function getRandomFlag(num) {
-    // Choose a random set flag from a 4-bit number
-
-    // Prevent infinite loop from incorrect argument
-    if (num === 0) {
-        console.log("Error: Cannot choose random set flag.");
-        return false;
-    }
-
-    var rand, res;
-
-    do {
-        rand = Math.pow(2, getRandomInt(0, 4));
-        res = num & rand;
-    } while (res === 0);
-
-    return res;
-}
-
-function knockDownWall(cell, wall) {
-    // Knock down the wall between cellOne and cellTwo
-
-    var wallmask;
-
-    switch (wall) {
-        case 'top':
-            wallmask = 8;
-            break;
-        case 'right':
-            wallmask = 4;
-            break;
-        case 'bottom':
-            wallmask = 2;
-            break;
-        case 'left':
-            wallmask = 1;
-            break;
-        default:
-            console.log("Error: Invalid wall to destroy.");
-            return false;
-    }
-
-    maze[cell[0]][cell[1]] &= ~wallmask;
-}
-
-function getNeighbours(visitedArray, cell) {
-    // Get all unvisited neighbours of `cell` in `maze` as byte
-
-    var validNeighbours = 0;
-
-    // Check left
-    if ((cell[0] != 0) && (!visitedArray[cell[0] - 1][cell[1]])) {
-        validNeighbours |= 1;
-    }
-
-    // Check below
-    if ((cell[1] != n - 1) && (!visitedArray[cell[0]][cell[1] + 1])) {
-        validNeighbours |= 2;
-    }
-
-    // Check right
-    if ((cell[0] != m - 1) && (!visitedArray[cell[0] + 1][cell[1]])) {
-        validNeighbours |= 4;
-    }
-
-    // Check above
-    if ((cell[1] != 0) && (!visitedArray[cell[0]][cell[1] - 1])) {
-        validNeighbours |= 8;
-    }
-
-    return validNeighbours;
 }
 
 function buildMaze() {
@@ -391,6 +299,103 @@ function solveMaze() {
     }
 }
 
+function placeRandomCounters() {
+    // Place random counters that the players needs to pick up throughout the
+    // maze
+
+    // One fifth as many random counters to pick up as solution counters
+    randomTotal = Math.ceil(solutionTotal / 5);
+
+    var i = 0, cell;
+    while (i < randomTotal) {
+        cell = getRandomCell();
+
+        if (validRandomCounterCell(cell)) {
+            maze[cell[0]][cell[1]] |= 32;
+            i++;
+        }
+    }
+}
+
+function getRandomInt(min, max) {
+    // Return a random integer between `min` and `max`, as per MDN docs
+
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function getRandomFlag(num) {
+    // Choose a random set flag from a 4-bit number
+
+    // Prevent infinite loop from incorrect argument
+    if (num === 0) {
+        console.log("Error: Cannot choose random set flag.");
+        return false;
+    }
+
+    var rand, res;
+
+    do {
+        rand = Math.pow(2, getRandomInt(0, 4));
+        res = num & rand;
+    } while (res === 0);
+
+    return res;
+}
+
+function knockDownWall(cell, wall) {
+    // Knock down the wall between cellOne and cellTwo
+
+    var wallmask;
+
+    switch (wall) {
+        case 'top':
+            wallmask = 8;
+            break;
+        case 'right':
+            wallmask = 4;
+            break;
+        case 'bottom':
+            wallmask = 2;
+            break;
+        case 'left':
+            wallmask = 1;
+            break;
+        default:
+            console.log("Error: Invalid wall to destroy.");
+            return false;
+    }
+
+    maze[cell[0]][cell[1]] &= ~wallmask;
+}
+
+function getNeighbours(visitedArray, cell) {
+    // Get all unvisited neighbours of `cell` in `maze` as byte
+
+    var validNeighbours = 0;
+
+    // Check left
+    if ((cell[0] != 0) && (!visitedArray[cell[0] - 1][cell[1]])) {
+        validNeighbours |= 1;
+    }
+
+    // Check below
+    if ((cell[1] != n - 1) && (!visitedArray[cell[0]][cell[1] + 1])) {
+        validNeighbours |= 2;
+    }
+
+    // Check right
+    if ((cell[0] != m - 1) && (!visitedArray[cell[0] + 1][cell[1]])) {
+        validNeighbours |= 4;
+    }
+
+    // Check above
+    if ((cell[1] != 0) && (!visitedArray[cell[0]][cell[1] - 1])) {
+        validNeighbours |= 8;
+    }
+
+    return validNeighbours;
+}
+
 function unsetWalledNeighbours(neighbours, cell) {
     // Unset all flags in byte `neighbours` where there's a wall between `cell`
     // and that neighbour
@@ -408,24 +413,6 @@ function unsetWalledNeighbours(neighbours, cell) {
     });
 
     return neighbours;
-}
-
-function placeRandomCounters() {
-    // Place random counters that the players needs to pick up throughout the
-    // maze
-
-    // One fifth as many random counters to pick up as solution counters
-    randomTotal = Math.ceil(solutionTotal / 5);
-
-    var i = 0, cell;
-    while (i < randomTotal) {
-        cell = getRandomCell();
-
-        if (validRandomCounterCell(cell)) {
-            maze[cell[0]][cell[1]] |= 32;
-            i++;
-        }
-    }
 }
 
 function validRandomCounterCell(cell) {
@@ -459,7 +446,6 @@ function getRandomCell() {
 
     return [getRandomInt(0, m - 1), getRandomInt(0, n - 1)];
 }
-
 // -----------------------------
 // The player movement functions
 // -----------------------------
@@ -716,12 +702,12 @@ function drawCounters() {
             if (maze[i][j] & 16) {
                 // Draw solution counters
                 drawCircle((i + 0.5) * cellWidth, (j + 0.5) * cellHeight,
-                        collectRad, solutionFillColour, solutionStrokeColour);
+                        circleRad, SOLUTION_FILL_COLOUR, SOLUTION_STROKE_COLOUR);
             }
             if (maze[i][j] & 32) {
                 // Draw random counters
                 drawCircle((i + 0.5) * cellWidth, (j + 0.5) * cellHeight,
-                        collectRad, randomFillColour, randomStrokeColour);
+                        circleRad, RANDOM_FILL_COLOUR, RANDOM_STROKE_COLOUR);
             }
         }
     }
@@ -746,7 +732,7 @@ function drawEnd() {
     context.lineWidth = 5;
 
     drawCircle((end[0] + 0.5) * cellWidth, (end[1] + 0.5) * cellHeight,
-            collectRad, endFillColour, endStrokeColour);
+            circleRad, END_FILL_COLOUR, END_STROKE_COLOUR);
 
     context.lineWidth = 1;
 }
@@ -815,13 +801,13 @@ function drawTouchControls() {
 
     context.globalAlpha = 0.2;
 
-    drawRect(0, 0, canvas.width, 0.25 * canvas.height, upColour, upColour);
+    drawRect(0, 0, canvas.width, 0.25 * canvas.height, UP_COLOUR, UP_COLOUR);
     drawRect(0, 0.75 * canvas.height, canvas.width, 0.25 * canvas.height,
-            downColour, downColour);
+            DOWN_COLOUR, DOWN_COLOUR);
     drawRect(0, 0.25 * canvas.height, 0.5 * canvas.width, 0.5 * canvas.height,
-            leftColour, leftColour);
+            LEFT_COLOUR, LEFT_COLOUR);
     drawRect(0.5 * canvas.width, 0.25 * canvas.height,
-            0.5 * canvas.width, 0.5 * canvas.height, rightColour, rightColour);
+            0.5 * canvas.width, 0.5 * canvas.height, RIGHT_COLOUR, RIGHT_COLOUR);
 
     context.globalAlpha = 1;
 }
@@ -842,19 +828,19 @@ function drawPlayer(x, y) {
     context.beginPath();
     context.rect(newTopLeftX, newTopLeftY, playerWidth, playerHeight);
     context.closePath();
-    context.fillStyle = playerColour || "black";
+    context.fillStyle = PLAYER_COLOUR;
     context.fill();
     context.lineWidth = 2;
-    context.strokeStyle = playerTrimColour || "white";
+    context.strokeStyle = PLAYER_TRIM_COLOUR;
     context.stroke();
     context.lineWidth = 1;
 }
 
 function drawKeyboardStartMessage() {
     drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 100,
-            messageFillColour, messageStrokeColour);
+            MESSAGE_FILL_COLOUR, MESSAGE_STROKE_COLOUR);
     context.font = "20px Arial";
-    context.fillStyle = messageStrokeColour;
+    context.fillStyle = MESSAGE_STROKE_COLOUR;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText("Use WASD to navigate the maze",
@@ -863,9 +849,9 @@ function drawKeyboardStartMessage() {
 
 function drawTouchStartMessage() {
     drawRect(canvas.width / 2 - 300, canvas.height / 2 - 50, 600, 100,
-            messageFillColour, messageStrokeColour);
+            MESSAGE_FILL_COLOUR, MESSAGE_STROKE_COLOUR);
     context.font = "20px Arial";
-    context.fillStyle = messageStrokeColour;
+    context.fillStyle = MESSAGE_STROKE_COLOUR;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText("Touch the top, left, right and bottom sections of the screen to move",
@@ -890,9 +876,9 @@ function drawEndMessage() {
 
 function drawKeyboardEndMessage() {
     drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
-            messageFillColour, messageStrokeColour);
+            MESSAGE_FILL_COLOUR, MESSAGE_STROKE_COLOUR);
     context.font = "50px Arial";
-    context.fillStyle = messageStrokeColour;
+    context.fillStyle = MESSAGE_STROKE_COLOUR;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText("Congratulations!", canvas.width / 2, canvas.height / 2);
@@ -905,9 +891,9 @@ function drawKeyboardEndMessage() {
 
 function drawTouchEndMessage() {
     drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
-            messageFillColour, messageStrokeColour);
+            MESSAGE_FILL_COLOUR, MESSAGE_STROKE_COLOUR);
     context.font = "50px Arial";
-    context.fillStyle = messageStrokeColour;
+    context.fillStyle = MESSAGE_STROKE_COLOUR;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText("Congratulations!", canvas.width / 2, canvas.height / 2);
@@ -928,9 +914,9 @@ function drawLostMessage() {
 
 function drawKeyboardLostMessage() {
     drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
-            dangerFillColour, dangerStrokeColour);
+            DANGER_FILL_COLOUR, DANGER_STROKE_COLOUR);
     context.font = "40px Arial";
-    context.fillStyle = dangerStrokeColour;
+    context.fillStyle = DANGER_STROKE_COLOUR;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText("Time's up!", canvas.width / 2, canvas.height / 2);
@@ -941,9 +927,9 @@ function drawKeyboardLostMessage() {
 
 function drawTouchLostMessage() {
     drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
-            dangerFillColour, dangerStrokeColour);
+            DANGER_FILL_COLOUR, DANGER_STROKE_COLOUR);
     context.font = "40px Arial";
-    context.fillStyle = dangerStrokeColour;
+    context.fillStyle = DANGER_STROKE_COLOUR;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText("Time's up!", canvas.width / 2, canvas.height / 2);
@@ -959,15 +945,15 @@ function drawCounterTallies() {
         context.globalAlpha = 0.5;
     }
 
-    drawRect(canvas.width - boxXOffset, boxYOffset, boxWidth, boxHeight,
-            solutionFillColour, solutionStrokeColour);
+    drawRect(canvas.width - BOX_OFFSET_X, BOX_OFFSET_Y, BOX_WIDTH, BOX_HEIGHT,
+            SOLUTION_FILL_COLOUR, SOLUTION_STROKE_COLOUR);
     context.font = "20px Arial";
-    context.fillStyle = solutionStrokeColour;
+    context.fillStyle = SOLUTION_STROKE_COLOUR;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(solutionCounter + " / " + solutionTotal,
-            canvas.width - boxXOffset + 0.5 * boxWidth,
-            boxYOffset + 0.5 * boxHeight);
+            canvas.width - BOX_OFFSET_X + 0.5 * BOX_WIDTH,
+            BOX_OFFSET_Y + 0.5 * BOX_HEIGHT);
 
     context.globalAlpha = 1;
 
@@ -975,12 +961,12 @@ function drawCounterTallies() {
         context.globalAlpha = 0.5;
     }
 
-    drawRect(canvas.width - boxXOffset, boxHeight + 2 * boxYOffset,
-            boxWidth, boxHeight, randomFillColour, randomStrokeColour);
-    context.fillStyle = randomStrokeColour;
+    drawRect(canvas.width - BOX_OFFSET_X, BOX_HEIGHT + 2 * BOX_OFFSET_Y,
+            BOX_WIDTH, BOX_HEIGHT, RANDOM_FILL_COLOUR, RANDOM_STROKE_COLOUR);
+    context.fillStyle = RANDOM_STROKE_COLOUR;
     context.fillText(randomCounter + " / " + randomTotal,
-            canvas.width - boxXOffset + 0.5 * boxWidth,
-            2 * boxYOffset + 1.5 * boxHeight);
+            canvas.width - BOX_OFFSET_X + 0.5 * BOX_WIDTH,
+            2 * BOX_OFFSET_Y + 1.5 * BOX_HEIGHT);
 
     context.globalAlpha = 1;
 }
@@ -991,14 +977,14 @@ function drawTimer(time) {
     context.font = "20px Arial";
 
     if (time <= 10 && time > 5) {
-        context.fillStyle = warningFillColour;
-        context.strokeStyle = warningStrokeColour;
+        context.fillStyle = WARNING_FILL_COLOUR;
+        context.strokeStyle = WARNING_STROKE_COLOUR;
     } else if (time <= 5) {
-        context.fillStyle = dangerFillColour;
-        context.strokeStyle = dangerStrokeColour;
+        context.fillStyle = DANGER_FILL_COLOUR;
+        context.strokeStyle = DANGER_STROKE_COLOUR;
     } else {
-        context.fillStyle = timerFillColour;
-        context.strokeStyle = timerStrokeColour;
+        context.fillStyle = TIMER_FILL_COLOUR;
+        context.strokeStyle = TIMER_STROKE_COLOUR;
     }
 
     var minutesLeft = Math.floor(time / 60).toString();
@@ -1012,14 +998,14 @@ function drawTimer(time) {
         context.globalAlpha = 0.5;
     }
 
-    drawRect(canvas.width - boxXOffset, 2 * boxHeight + 3 * boxYOffset,
-            boxWidth, boxHeight);
+    drawRect(canvas.width - BOX_OFFSET_X, 2 * BOX_HEIGHT + 3 * BOX_OFFSET_Y,
+             BOX_WIDTH, BOX_HEIGHT);
 
     context.fillStyle = context.strokeStyle;
 
     context.fillText(minutesLeft + ":" + secondsLeft,
-            canvas.width - boxXOffset + 0.5 * boxWidth,
-            3 * boxYOffset + 2.5 * boxHeight);
+                     canvas.width - BOX_OFFSET_X + 0.5 * BOX_WIDTH,
+                     3 * BOX_OFFSET_Y + 2.5 * BOX_HEIGHT);
 
     context.globalAlpha = 1;
 
@@ -1070,7 +1056,7 @@ function resizeCanvas() {
     cellHeight = canvas.height / n;
     playerWidth = 0.85 * cellWidth;
     playerHeight = 0.85 * cellHeight;
-    collectRad = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
+    circleRad = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
 
     drawAll(playerPosX, playerPosY);
 }
