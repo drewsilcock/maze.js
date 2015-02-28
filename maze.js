@@ -1,13 +1,13 @@
 // Author: Drew Silcock
 // TODO:
-// * Add difficulty option
-// * Scale time given with difficulty
+// * Select difficulty with keyboard
+// * In game menu
 // * Animate movement
 // * Add ghosts that you have to avoid
 
 "use strict";
 
-var touchCapable = 'ontouchstart' in document.documentElement;
+var touchCapable = "ontouchstart" in document.documentElement;
 
 // ----------------
 // Canvas variables
@@ -67,8 +67,11 @@ var circleRad;
 var BOX_WIDTH = 75;
 var BOX_HEIGHT = 50;
 
+var BOX_WIDTH = 160;
+var BOX_HEIGHT = 100;
+
 // Spatial offsets of tally boxes
-var BOX_OFFSET_X = 80;
+var BOX_OFFSET_X = BOX_WIDTH + 5;
 var BOX_OFFSET_Y = 5;
 
 // ------------------
@@ -79,9 +82,9 @@ var PLAYER_COLOUR = "#F3413E";
 var PLAYER_TRIM_COLOUR = "#A62F2D";
 
 var SOLUTION_FILL_COLOUR = "#FFCC00";
-var SOLUTION_STROKE_COLOUR = "#CCA300";
+var SOLUTION_STROKE_COLOUR = "#755E02";
 var RANDOM_FILL_COLOUR = "#40FA39";
-var RANDOM_STROKE_COLOUR = "#2AB325";
+var RANDOM_STROKE_COLOUR = "#0A540D";
 var END_FILL_COLOUR = "#E739FA";
 var END_STROKE_COLOUR = "#A028AD";
 
@@ -126,26 +129,7 @@ function drawMenu() {
     var diffBoxWidth = 0.5 * canvas.width;
     var diffBoxHeight = 0.1 * canvas.height - 10;
 
-    drawIcon();
-
-    // Draw the rules
-    var theRules = "The aim is to navigate the maze to the purple spot " +
-                   "before the time runs out! You need to collect all the " +
-                   "yellow and green spots before you finish the game, and " +
-                   "each green spot gives you 5 more seconds on the clock.";
-
-    context.font = "40px Arial";
-    context.fillStyle = "black";
-    context.fillText("Rules:", 0.5 * canvas.width, 0.2 * canvas.height);
-    context.font = "30px Arial";
-    wrapText(theRules, 0.5 * canvas.width, 0.3 * canvas.height,
-            0.75 * canvas.width, 40);
-
-    // Ask the player to choose the difficulty
-    context.font = "40px Arial";
-    context.fillText("Please select difficulty:", 0.5 * canvas.width,
-                     0.6 * canvas.height);
-
+    // Draw the difficulty boxes
     var easyTopLeftX = 0.5 * (canvas.width - diffBoxWidth);
     var easyTopLeftY = 0.7 * canvas.height - 0.5 * diffBoxHeight;
     drawRect(easyTopLeftX, easyTopLeftY,
@@ -164,19 +148,38 @@ function drawMenu() {
              diffBoxWidth, diffBoxHeight,
              DANGER_FILL_COLOUR, DANGER_STROKE_COLOUR);
 
-    context.font = "20px Arial";
-    context.fillStyle = "black";
-    context.fillText("Easy", 0.5 * canvas.width,
-                     0.7 * canvas.height);
-    context.fillText("Medium", 0.5 * canvas.width,
-                     0.8 * canvas.height);
-    context.fillText("Hard", 0.5 * canvas.width,
-                     0.9 * canvas.height);
+    // Draw the "MAZE.js" icon
+    drawIcon();
 
+    context.fillStyle = "black";
+
+    context.font = "40px Arial";
+
+    // Headings
+    context.fillText("Rules:", 0.5 * canvas.width, 0.2 * canvas.height);
+    context.fillText("Please select difficulty:", 0.5 * canvas.width,
+                     0.6 * canvas.height);
+
+    context.font = "30px Arial";
+
+    wrapText("The aim is to navigate the maze to the purple spot before " +
+             "the time runs out. You need to collect the yellow and green " +
+             "spots before you finish the game, and each green spot gives " +
+             "you 5 more seconds on the clock. Good luck!",
+             0.5 * canvas.width, 0.3 * canvas.height,
+             0.75 * canvas.width, 40);
+
+    context.fillText("(E)asy", 0.5 * canvas.width,
+                     0.7 * canvas.height);
+    context.fillText("(M)edium", 0.5 * canvas.width,
+                     0.8 * canvas.height);
+    context.fillText("(H)ard", 0.5 * canvas.width,
+                     0.9 * canvas.height);
 
     window.addEventListener("resize", resizeMenuCanvas, false);
     window.addEventListener("click", checkClick, false);
     window.addEventListener("touchstart", checkTouch, false);
+    window.addEventListener("keydown", checkKey, false);
 
     function checkClick(evt) {
         // Check whether the user has clicked within the easy, medium or hard
@@ -206,27 +209,50 @@ function drawMenu() {
 
         if (x >= easyTopLeftX && x <= easyTopLeftX + diffBoxWidth &&
             y >= easyTopLeftY && y <= easyTopLeftY + diffBoxHeight) {
-                window.removeEventListener("click", checkClick, false);
-                window.removeEventListener("touchstart", checkTouch, false);
-                window.removeEventListener("resize", resizeMenuCanvas, false);
-                initialiseGame("easy");
+            startGame("easy");
         }
 
         if (x >= mediumTopLeftX && x <= mediumTopLeftX + diffBoxWidth &&
             y >= mediumTopLeftY && y <= mediumTopLeftY + diffBoxHeight) {
-                window.removeEventListener("click", checkClick, false);
-                window.removeEventListener("touchstart", checkTouch, false);
-                window.removeEventListener("resize", resizeMenuCanvas, false);
-                initialiseGame("medium");
+            startGame("medium");
         }
 
         if (x >= hardTopLeftX && x <= hardTopLeftX + diffBoxWidth &&
             y >= hardTopLeftY && y <= hardTopLeftY + diffBoxHeight) {
-                window.removeEventListener("click", checkClick, false);
-                window.removeEventListener("touchstart", checkTouch, false);
-                window.removeEventListener("resize", resizeMenuCanvas, false);
-                initialiseGame("hard");
+            startGame("hard");
         }
+    }
+
+    function checkKey(evt) {
+        // Checks whether user has pressed `e`, `m`, or `h` for easy, medium
+        // and hard difficulties
+
+        switch (evt.keyCode) {
+            case 69:  // `e` for easy
+                startGame("easy");
+                break;
+            case 77:  // `m` for medium
+                startGame("medium");
+                break;
+            case 72:  // 'h' for hard
+                startGame("hard");
+                break;
+            case 73:  // 'i' for secret insane mode
+                startGame("insane");
+                break;
+        }
+    }
+
+    function startGame(difficulty) {
+        // Remove all event listeners and initialise game with specifiied
+        // difficulty
+
+        window.removeEventListener("click", checkClick, false);
+        window.removeEventListener("touchstart", checkTouch, false);
+        window.removeEventListener("keydown", checkKey, false);
+        window.removeEventListener("resize", resizeMenuCanvas, false);
+
+        initialiseGame(difficulty);
     }
 }
 
@@ -242,16 +268,16 @@ function drawIcon() {
 }
 
 function wrapText(text, x, y, maxWidth, lineHeight) {
-    var words = text.split(' ');
-    var line = '';
+    var words = text.split(" ");
+    var line = "";
 
     for(var n = 0; n < words.length; n++) {
-        var testLine = line + words[n] + ' ';
+        var testLine = line + words[n] + " ";
         var metrics = context.measureText(testLine);
         var testWidth = metrics.width;
         if (testWidth > maxWidth && n > 0) {
             context.fillText(line, x, y);
-            line = words[n] + ' ';
+            line = words[n] + " ";
             y += lineHeight;
         } else {
             line = testLine;
@@ -359,23 +385,23 @@ function buildMaze() {
             switch (neighbour) {
                 case 1:  // Left of original cell
                     newCell = [currentCell[0] - 1, currentCell[1]];
-                    knockDownWall(currentCell, 'left');
-                    knockDownWall(newCell, 'right');
+                    knockDownWall(currentCell, "left");
+                    knockDownWall(newCell, "right");
                     break;
                 case 2:  // Below original cell
                     newCell = [currentCell[0], currentCell[1] + 1];
-                    knockDownWall(currentCell, 'bottom');
-                    knockDownWall(newCell, 'top');
+                    knockDownWall(currentCell, "bottom");
+                    knockDownWall(newCell, "top");
                     break;
                 case 4:  // Right of original cell
                     newCell = [currentCell[0] + 1, currentCell[1]];
-                    knockDownWall(currentCell, 'right');
-                    knockDownWall(newCell, 'left');
+                    knockDownWall(currentCell, "right");
+                    knockDownWall(newCell, "left");
                     break;
                 case 8:  // Above original cell
                     newCell = [currentCell[0], currentCell[1] - 1];
-                    knockDownWall(currentCell, 'top');
-                    knockDownWall(newCell, 'bottom');
+                    knockDownWall(currentCell, "top");
+                    knockDownWall(newCell, "bottom");
                     break;
                 default:
                     console.log("Error: Invalid choice of neighbour.");
@@ -413,7 +439,7 @@ function solveMaze() {
 
         // Here we also require no intervening wall
         validNeighbours = unsetWalledNeighbours(unvisitedNeighbours,
-                currentCell);
+                                                currentCell);
 
         if (validNeighbours === 0) {
             currentCell = cellStack.pop();
@@ -503,16 +529,16 @@ function knockDownWall(cell, wall) {
     var wallmask;
 
     switch (wall) {
-        case 'top':
+        case "top":
             wallmask = 8;
             break;
-        case 'right':
+        case "right":
             wallmask = 4;
             break;
-        case 'bottom':
+        case "bottom":
             wallmask = 2;
             break;
-        case 'left':
+        case "left":
             wallmask = 1;
             break;
         default:
@@ -619,25 +645,25 @@ function movePlayerKeyboard(evt) {
         case 87:  // w key
             newX = playerPosX;
             newY = playerPosY - 1;
-            canMove = canMoveTo('up');
+            canMove = canMoveTo("up");
             break;
         case 37:  // Arrow left key
         case 65:  // a key
             newX = playerPosX - 1;
             newY = playerPosY;
-            canMove = canMoveTo('left');
+            canMove = canMoveTo("left");
             break;
         case 40: // Arrow down key
         case 83: // s key
             newX = playerPosX;
             newY = playerPosY + 1;
-            canMove = canMoveTo('down');
+            canMove = canMoveTo("down");
             break;
         case 39:  // Arrow right key
         case 68: // d key
             newX = playerPosX + 1;
             newY = playerPosY;
-            canMove = canMoveTo('right');
+            canMove = canMoveTo("right");
             break;
         default:
             return;
@@ -663,30 +689,30 @@ function movePlayerTouch(evt) {
     if (touchY < 0.25 * canvas.height) {
         newX = playerPosX;
         newY = playerPosY - 1;
-        canMove = canMoveTo('up');
+        canMove = canMoveTo("up");
     } else if (touchY > 0.75 * canvas.height) {
         newX = playerPosX;
         newY = playerPosY + 1;
-        canMove = canMoveTo('down');
+        canMove = canMoveTo("down");
     } else if (touchX < 0.5 * canvas.width) {
         newX = playerPosX - 1;
         newY = playerPosY;
-        canMove = canMoveTo('left');
+        canMove = canMoveTo("left");
     } else if (touchX > 0.5 * canvas.width) {
         newX = playerPosX + 1;
         newY = playerPosY;
-        canMove = canMoveTo('right');
+        canMove = canMoveTo("right");
     }
 
     movePlayer(canMove, newX, newY);
 }
 
 function movePlayer(canMove, newX, newY) {
-    if (!hasStarted) {
-        createTimer();
-    }
-
     if (canMove) {  // Can move
+        if (!hasStarted) {
+            createTimer();
+        }
+
         hasStarted = true;
 
         checkCounters(newX, newY);
@@ -697,7 +723,7 @@ function movePlayer(canMove, newX, newY) {
     }
 
     if (playerPosX === end[0] && playerPosY === end[1] &&
-            hasCollectedAllCounters()) {
+        hasCollectedAllCounters()) {
         // Remove the movement event listeners
         window.removeEventListener("keydown", movePlayerKeyboard, true);
         window.removeEventListener("touchstart", movePlayerTouch, true);
@@ -751,22 +777,22 @@ function canMoveTo(direction) {
     var cellval = maze[playerPosX][playerPosY];
 
     switch (direction) {
-        case 'left':
+        case "left":
             if (playerPosX === 0 || cellval & 1) {
                 return false;
             }
             break;
-        case 'down':
+        case "down":
             if (playerPosY === n - 1 || cellval & 2) {
                 return false;
             }
             break;
-        case 'right':
+        case "right":
             if (playerPosX === m - 1 || cellval & 4) {
                 return false;
             }
             break;
-        case 'up':
+        case "up":
             if (playerPosY === 0 || cellval & 8) {
                 return false;
             }
@@ -805,12 +831,12 @@ function createTimer() {
         timeLeft--;
         drawAll(playerPosX, playerPosY);
         if (timeLeft === 0) {
-            clearInterval(timerInterval);
-            hasLost = true;
-            drawAll();
-
             window.removeEventListener("keydown", movePlayerKeyboard, true);
             window.removeEventListener("touchstart", movePlayerTouch, true);
+
+            hasLost = true;
+            clearInterval(timerInterval);
+            drawAll();
 
             window.addEventListener("keydown", restartGameKeyboard, true);
             window.addEventListener("touchstart", restartGameTouch, true);
@@ -938,19 +964,6 @@ function drawRect(x, y, width, height, fillStyle, strokeStyle) {
     context.stroke();
 }
 
-function drawRectBorder(x, y, width, height, strokeStyle, lineWidth) {
-    context.beginPath();
-    context.rect(x, y, width, height);
-    context.closePath();
-    context.strokeStyle = strokeStyle || "white";
-    context.lineWidth = 5;
-    context.stroke();
-}
-
-function makeWhite(x, y, width, height) {
-    drawRect(x, y, width, height);
-}
-
 function drawTouchControls() {
     // Draws coloured rectangles showing the touch screen control areas
 
@@ -985,100 +998,73 @@ function drawPlayer(x, y) {
     context.closePath();
     context.fillStyle = PLAYER_COLOUR;
     context.fill();
-    context.lineWidth = 2;
+    context.lineWidth = 5;
     context.strokeStyle = PLAYER_TRIM_COLOUR;
     context.stroke();
     context.lineWidth = 1;
 }
 
-function drawKeyboardStartMessage() {
-    drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 100,
-            MESSAGE_FILL_COLOUR, MESSAGE_STROKE_COLOUR);
-    context.font = "20px Arial";
-    context.fillStyle = MESSAGE_STROKE_COLOUR;
-    context.fillText("Use WASD to navigate the maze",
-            canvas.width / 2, canvas.height / 2);
-}
-
-function drawTouchStartMessage() {
-    drawRect(canvas.width / 2 - 300, canvas.height / 2 - 50, 600, 100,
-            MESSAGE_FILL_COLOUR, MESSAGE_STROKE_COLOUR);
-    context.font = "20px Arial";
-    context.fillStyle = MESSAGE_STROKE_COLOUR;
-    context.fillText("Touch the top, left, right and bottom sections of the screen to move",
-            canvas.width / 2, canvas.height / 2);
-}
-
 function drawStartMessage() {
+    context.font = "40px Arial";
+
     if (touchCapable) {
-        drawTouchStartMessage();
+        drawRect(0.5 * canvas.width - 350, 0.5 * canvas.height - 50, 700, 140,
+                 MESSAGE_FILL_COLOUR, MESSAGE_STROKE_COLOUR);
+        context.fillStyle = MESSAGE_STROKE_COLOUR;
+        context.fillText("Touch the top, left, right and bottom",
+                         0.5 * canvas.width, 0.5 * canvas.height);
+        context.fillText("sections of the screen to move",
+                         0.5 * canvas.width, 0.5 * canvas.height + 40);
     } else {
-        drawKeyboardStartMessage();
+        drawRect(0.5 * canvas.width - 300, 0.5 * canvas.height - 50, 600, 100,
+                 MESSAGE_FILL_COLOUR, MESSAGE_STROKE_COLOUR);
+        context.fillStyle = MESSAGE_STROKE_COLOUR;
+        context.fillText("Use WASD to navigate the maze",
+                         0.5 * canvas.width, 0.5 * canvas.height);
     }
+
+    drawIcon();
 }
 
-function drawEndMessage() {
+function drawWinMessage() {
+    drawRect(0.5 * canvas.width - 350, 0.5 * canvas.height - 50, 700, 225,
+            RANDOM_FILL_COLOUR, RANDOM_STROKE_COLOUR);
+    context.font = "60px Arial";
+    context.fillStyle = RANDOM_STROKE_COLOUR;
+    context.fillText("Congratulations!",
+                     0.5 * canvas.width, 0.5 * canvas.height);
+    context.font = "40px Arial";
+    context.fillText("You finished with " + timeLeft + " seconds to spare.",
+            0.5 * canvas.width, 0.5 * canvas.height + 75);
+
     if (touchCapable) {
-        drawTouchEndMessage();
+        context.fillText("Touch the screen to play again.",
+                         0.5 * canvas.width, 0.5 * canvas.height + 125);
     } else {
-        drawKeyboardEndMessage();
+        context.fillText("Press 'Enter' to play again.",
+                         0.5 * canvas.width, 0.5 * canvas.height + 125);
     }
-}
 
-function drawKeyboardEndMessage() {
-    drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
-            MESSAGE_FILL_COLOUR, MESSAGE_STROKE_COLOUR);
-    context.font = "50px Arial";
-    context.fillStyle = MESSAGE_STROKE_COLOUR;
-    context.fillText("Congratulations!", canvas.width / 2, canvas.height / 2);
-    context.font = "20px Arial";
-    context.fillText("You finished with " + timeLeft + " seconds to spare.",
-            canvas.width / 2, canvas.height / 2 + 50);
-    context.fillText("Press 'Enter' to play again.",
-            canvas.width / 2, canvas.height / 2 + 75);
-}
-
-function drawTouchEndMessage() {
-    drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
-            MESSAGE_FILL_COLOUR, MESSAGE_STROKE_COLOUR);
-    context.font = "50px Arial";
-    context.fillStyle = MESSAGE_STROKE_COLOUR;
-    context.fillText("Congratulations!", canvas.width / 2, canvas.height / 2);
-    context.font = "20px Arial";
-    context.fillText("You finished with " + timeLeft + " seconds to spare.",
-            canvas.width / 2, canvas.height / 2 + 50);
-    context.fillText("Touch the screen to play again.",
-            canvas.width / 2, canvas.height / 2 + 75);
+    drawIcon();
 }
 
 function drawLostMessage() {
+    drawRect(0.5 * canvas.width - 300, 0.5 * canvas.height - 60, 600, 200,
+             DANGER_FILL_COLOUR, DANGER_STROKE_COLOUR);
+    context.font = "60px Arial";
+    context.fillStyle = DANGER_STROKE_COLOUR;
+    context.fillText("Time's up!", 0.5 * canvas.width, 0.5 * canvas.height);
+    context.font = "40px Arial";
+
     if (touchCapable) {
-        drawTouchLostMessage();
+        context.fillText("Touch the screen to play again",
+                         0.5 * canvas.width, 0.5 * canvas.height + 75);
     } else {
-        drawKeyboardLostMessage();
+        context.fillText("Press 'Enter' to play again",
+                         0.5 * canvas.width, 0.5 * canvas.height + 75);
     }
-}
 
-function drawKeyboardLostMessage() {
-    drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
-            DANGER_FILL_COLOUR, DANGER_STROKE_COLOUR);
-    context.font = "40px Arial";
-    context.fillStyle = DANGER_STROKE_COLOUR;
-    context.fillText("Time's up!", canvas.width / 2, canvas.height / 2);
-    context.font = "20px Arial";
-    context.fillText("Press 'Enter' to play again",
-            canvas.width / 2, canvas.height / 2 + 50);
-}
-
-function drawTouchLostMessage() {
-    drawRect(canvas.width / 2 - 250, canvas.height / 2 - 50, 500, 150,
-            DANGER_FILL_COLOUR, DANGER_STROKE_COLOUR);
-    context.font = "40px Arial";
-    context.fillStyle = DANGER_STROKE_COLOUR;
-    context.fillText("Time's up!", canvas.width / 2, canvas.height / 2);
-    context.font = "20px Arial";
-    context.fillText("Touch the screen to play again",
-            canvas.width / 2, canvas.height / 2 + 50);
+    drawIcon();
 }
 
 function drawCounterTallies() {
@@ -1089,12 +1075,12 @@ function drawCounterTallies() {
     }
 
     drawRect(canvas.width - BOX_OFFSET_X, BOX_OFFSET_Y, BOX_WIDTH, BOX_HEIGHT,
-            SOLUTION_FILL_COLOUR, SOLUTION_STROKE_COLOUR);
-    context.font = "20px Arial";
+             SOLUTION_FILL_COLOUR, SOLUTION_STROKE_COLOUR);
+    context.font = "50px Arial";
     context.fillStyle = SOLUTION_STROKE_COLOUR;
     context.fillText(solutionCounter + " / " + solutionTotal,
-            canvas.width - BOX_OFFSET_X + 0.5 * BOX_WIDTH,
-            BOX_OFFSET_Y + 0.5 * BOX_HEIGHT);
+                     canvas.width - BOX_OFFSET_X + 0.5 * BOX_WIDTH,
+                     BOX_OFFSET_Y + 0.5 * BOX_HEIGHT);
 
     context.globalAlpha = 1;
 
@@ -1103,11 +1089,11 @@ function drawCounterTallies() {
     }
 
     drawRect(canvas.width - BOX_OFFSET_X, BOX_HEIGHT + 2 * BOX_OFFSET_Y,
-            BOX_WIDTH, BOX_HEIGHT, RANDOM_FILL_COLOUR, RANDOM_STROKE_COLOUR);
+             BOX_WIDTH, BOX_HEIGHT, RANDOM_FILL_COLOUR, RANDOM_STROKE_COLOUR);
     context.fillStyle = RANDOM_STROKE_COLOUR;
     context.fillText(randomCounter + " / " + randomTotal,
-            canvas.width - BOX_OFFSET_X + 0.5 * BOX_WIDTH,
-            2 * BOX_OFFSET_Y + 1.5 * BOX_HEIGHT);
+                     canvas.width - BOX_OFFSET_X + 0.5 * BOX_WIDTH,
+                     2 * BOX_OFFSET_Y + 1.5 * BOX_HEIGHT);
 
     context.globalAlpha = 1;
 }
@@ -1115,7 +1101,7 @@ function drawCounterTallies() {
 function drawTimer(time) {
     // Draws a timer displaying time
 
-    context.font = "20px Arial";
+    context.font = "50px Arial";
 
     if (time <= 10 && time > 5) {
         context.fillStyle = WARNING_FILL_COLOUR;
@@ -1152,9 +1138,21 @@ function drawTimer(time) {
 
 }
 
+// TODO: Finish this, decide on blur
+function drawEscapeMenu() {
+    // Draws the in-game menu brought up when player presses escape
+
+    canvas.style.filter = canvas.style.webkitFilter = "blur(3px)";
+
+    var menuCanvas = document.getElementById("menu-canvas");
+    var menuContext = menuCanvas.getContext("2d");
+
+    menuContext.fillStyle = "black";
+    menuContext.fillText("TESTING", 0.5 * canvas.width, 0.5 * canvas.height);
+}
+
 function drawAll(x, y) {
     // Redraws the whole maze, the controls and the player at position `x`, `y`
-    //makeWhite(0, 0, canvas.width, canvas.height);
 
     canvas.width = canvas.width;
     canvas.height = canvas.height;
@@ -1178,7 +1176,7 @@ function drawAll(x, y) {
     }
 
     if (hasWon) {
-        drawEndMessage();
+        drawWinMessage();
     }
 
     if (hasLost) {
@@ -1189,7 +1187,7 @@ function drawAll(x, y) {
 // ------------------------------
 // Dynamic sesizability functions
 // ------------------------------
-//
+
 function resizeMenuCanvas() {
     // Changes canvas size to be equal to window size
 
@@ -1234,9 +1232,6 @@ function resizeGameCanvas() {
 function initialiseGame(difficulty) {
     // Reset, build and solve maze, then draw all elements and set listeners
 
-    // Just in case the timer is still going somehow
-    clearInterval(timerInterval);
-
     switch (difficulty) {
         case "easy":
             m = 10, n = 10;
@@ -1246,6 +1241,9 @@ function initialiseGame(difficulty) {
             break;
         case "hard":
             m = 20, n = 20;
+            break;
+        case "insane":
+            m = 50, n = 50;
             break;
     }
 
@@ -1282,7 +1280,7 @@ function initialiseGame(difficulty) {
     drawAll(start[0], start[1]);
 
     window.addEventListener("keydown", movePlayerKeyboard, true);
-    //window.addEventListener("keydown", escapeMenu, true);
+    window.addEventListener("keydown", drawEscapeMenu, true);
     window.addEventListener("touchstart", movePlayerTouch, true);
     window.addEventListener("resize", resizeGameCanvas, false);
 }

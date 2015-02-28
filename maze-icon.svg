@@ -47,7 +47,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -88,16 +88,16 @@
         <text
            xml:space="preserve"
            style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-           x="124.50744"
-           y="86.093323"
+           x="121.05141"
+           y="81.063332"
            id="text2985"
            sodipodi:linespacing="125%"
            transform="matrix(0.98466083,0.17447936,-0.17447936,0.98466083,0,0)"><tspan
              sodipodi:role="line"
              id="tspan2987"
-             x="124.50744"
-             y="86.093323"
-             style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Purisa;-inkscape-font-specification:Purisa Bold">M</tspan></text>
+             x="121.05141"
+             y="81.063332"
+             style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-family:Purisa;-inkscape-font-specification:Purisa Bold">m</tspan></text>
       </g>
       <g
          id="g3898">
@@ -112,16 +112,16 @@
         <text
            xml:space="preserve"
            style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-           x="148.79851"
-           y="143.47267"
+           x="151.72546"
+           y="140.26167"
            id="text2989"
            sodipodi:linespacing="125%"
            transform="matrix(0.99293926,-0.11862387,0.11862387,0.99293926,0,0)"><tspan
              sodipodi:role="line"
              id="tspan2991"
-             x="148.79851"
-             y="143.47267"
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Purisa;-inkscape-font-specification:Purisa">A</tspan></text>
+             x="151.72546"
+             y="140.26167"
+             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Purisa;-inkscape-font-specification:Purisa">a</tspan></text>
       </g>
       <g
          id="g3893">
@@ -135,15 +135,15 @@
         <text
            xml:space="preserve"
            style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-           x="209.28571"
-           y="98.076462"
+           x="216.35677"
+           y="95.046005"
            id="text2993"
            sodipodi:linespacing="125%"><tspan
              sodipodi:role="line"
              id="tspan2995"
-             x="209.28571"
-             y="98.076462"
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Purisa;-inkscape-font-specification:Purisa">Z</tspan></text>
+             x="216.35677"
+             y="95.046005"
+             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Purisa;-inkscape-font-specification:Purisa">z</tspan></text>
       </g>
       <g
          id="g3888">
@@ -158,16 +158,16 @@
         <text
            xml:space="preserve"
            style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"
-           x="282.39999"
-           y="-10.118876"
+           x="282.71445"
+           y="-14.178772"
            id="text2997"
            sodipodi:linespacing="125%"
            transform="matrix(0.90396307,0.42761054,-0.42761054,0.90396307,0,0)"><tspan
              sodipodi:role="line"
              id="tspan2999"
-             x="282.39999"
-             y="-10.118876"
-             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Purisa;-inkscape-font-specification:Purisa">E</tspan></text>
+             x="282.71445"
+             y="-14.178772"
+             style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Purisa;-inkscape-font-specification:Purisa">e</tspan></text>
       </g>
       <g
          id="g3883">
