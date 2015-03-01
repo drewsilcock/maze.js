@@ -1,6 +1,8 @@
 // Author: Drew Silcock
 // TODO:
 // * Draw arrows on touch display
+// * Change keyboard movement to remove keyboard repeat delay
+// * Make holding down touch automatically move
 // * Animate movement
 // * Add ghosts that you have to avoid
 
