@@ -1,10 +1,10 @@
 // Author: Drew Silcock
 // TODO:
-// * In game menu
 // * Draw arrows on touch display
-// * Consider wrapping entire script inside self-executing anon function
 // * Animate movement
 // * Add ghosts that you have to avoid
+
+(function() {
 
 "use strict";
 
@@ -49,6 +49,22 @@ var playerWidth;
 var playerHeight;
 
 // --------------
+// Menu variables
+// --------------
+
+// Main menu box dimensions and positions
+var diffBoxWidth, diffBoxHeight;
+var easyTopLeftX, easyTopLeftY;
+var mediumTopLeftX, mediumTopLeftY;
+var hardTopLeftX, hardTopLeftY;
+
+// In-game menu box dimensions and positions
+var menuBoxWidth, menuBoxHeight;
+var menuContTopLeftX, menuContTopLeftY;
+var menuRestartTopLeftX, menuRestartTopLeftY;
+var menuQuitTopLeftX, menuQuitTopLeftY;
+
+// --------------
 // Game variables
 // --------------
 
@@ -82,6 +98,13 @@ var BOX_HEIGHT = 100;
 var BOX_OFFSET_X = BOX_WIDTH + 5;
 var BOX_OFFSET_Y = 5;
 
+// ----------------------
+// Pause button variables
+// ----------------------
+
+var PAUSE_OFFSET_X = 5;
+var PAUSE_OFFSET_Y = 5;
+
 // ------------------
 // Colour definitions
 // ------------------
@@ -113,7 +136,7 @@ var WARNING_FILL_COLOUR = "#FF8400";
 var WARNING_STROKE_COLOUR = "#8A4700";
 
 var DANGER_FILL_COLOUR = "#FF7661";
-var DANGER_STROKE_COLOUR = "#C93018";
+var DANGER_STROKE_COLOUR = "#913324";
 
 // --------------
 // Start the fun!
@@ -130,27 +153,29 @@ function drawMenu() {
 
     clearCanvas();
 
+    menuContext.lineWidth = 5;
+
     // Width and height of difficulty boxes
-    var diffBoxWidth = 0.5 * menuCanvas.width;
-    var diffBoxHeight = 0.1 * menuCanvas.height - 10;
+    diffBoxWidth = 0.5 * menuCanvas.width;
+    diffBoxHeight = 0.1 * menuCanvas.height - 10;
 
     // Draw the difficulty boxes
-    var easyTopLeftX = 0.5 * (menuCanvas.width - diffBoxWidth);
-    var easyTopLeftY = 0.7 * menuCanvas.height - 0.5 * diffBoxHeight;
+    easyTopLeftX = 0.5 * (menuCanvas.width - diffBoxWidth);
+    easyTopLeftY = 0.7 * menuCanvas.height - 0.5 * diffBoxHeight;
     drawRect(easyTopLeftX, easyTopLeftY,
              diffBoxWidth, diffBoxHeight,
              menuContext,
              RANDOM_FILL_COLOUR, RANDOM_STROKE_COLOUR);
 
-    var mediumTopLeftX = 0.5 * (menuCanvas.width - diffBoxWidth);
-    var mediumTopLeftY = 0.8 * menuCanvas.height - 0.5 * diffBoxHeight;
+    mediumTopLeftX = 0.5 * (menuCanvas.width - diffBoxWidth);
+    mediumTopLeftY = 0.8 * menuCanvas.height - 0.5 * diffBoxHeight;
     drawRect(mediumTopLeftX, mediumTopLeftY,
              diffBoxWidth, diffBoxHeight,
              menuContext,
              WARNING_FILL_COLOUR, WARNING_STROKE_COLOUR);
 
-    var hardTopLeftX = 0.5 * (menuCanvas.width - diffBoxWidth);
-    var hardTopLeftY = 0.9 * menuCanvas.height - 0.5 * diffBoxHeight;
+    hardTopLeftX = 0.5 * (menuCanvas.width - diffBoxWidth);
+    hardTopLeftY = 0.9 * menuCanvas.height - 0.5 * diffBoxHeight;
     drawRect(hardTopLeftX, hardTopLeftY,
              diffBoxWidth, diffBoxHeight,
              menuContext,
@@ -192,83 +217,83 @@ function drawMenu() {
                          0.9 * menuCanvas.height);
 
     window.addEventListener("resize", resizeMenu, false);
-    window.addEventListener("click", checkClick, false);
+    window.addEventListener("click", menuCheckClick, false);
     window.addEventListener("touchstart", checkTouch, false);
     window.addEventListener("keydown", checkKey, false);
+}
 
-    function checkClick(evt) {
-        // Check whether the user has clicked within the easy, medium or hard
-        // boxes
+function menuCheckClick(evt) {
+    // Check whether the user has clicked within the easy, medium or hard
+    // boxes
 
-        var clickX = evt.pageX;
-        var clickY = evt.pageY;
+    var clickX = evt.pageX;
+    var clickY = evt.pageY;
 
-        checkPos(clickX, clickY);
+    menuCheckPos(clickX, clickY);
+}
+
+function checkTouch(evt) {
+    // Checks whether the player has touched one of the difficulty boxes
+
+    // We want to record only individual touches
+    evt.preventDefault();
+
+    var touchX = evt.targetTouches[0].pageX;
+    var touchY = evt.targetTouches[0].pageY;
+
+    menuCheckPos(touchX, touchY);
+}
+
+function menuCheckPos(x, y) {
+    // Check whether x, y is within any of the difficulty boxes, and
+    // initialise the game with the corresponding difficulty
+
+    if (x >= easyTopLeftX && x <= easyTopLeftX + diffBoxWidth &&
+        y >= easyTopLeftY && y <= easyTopLeftY + diffBoxHeight) {
+        startGame("easy");
     }
 
-    function checkTouch(evt) {
-        // Checks whether the player has touched one of the difficulty boxes
-
-        // We want to record only individual touches
-        evt.preventDefault();
-
-        var touchX = evt.targetTouches[0].pageX;
-        var touchY = evt.targetTouches[0].pageY;
-
-        checkPos(touchX, touchY);
+    if (x >= mediumTopLeftX && x <= mediumTopLeftX + diffBoxWidth &&
+        y >= mediumTopLeftY && y <= mediumTopLeftY + diffBoxHeight) {
+        startGame("medium");
     }
 
-    function checkPos(x, y) {
-        // Check whether x, y is within any of the difficulty boxes, and
-        // initialise the game with the corresponding difficulty
+    if (x >= hardTopLeftX && x <= hardTopLeftX + diffBoxWidth &&
+        y >= hardTopLeftY && y <= hardTopLeftY + diffBoxHeight) {
+        startGame("hard");
+    }
+}
 
-        if (x >= easyTopLeftX && x <= easyTopLeftX + diffBoxWidth &&
-            y >= easyTopLeftY && y <= easyTopLeftY + diffBoxHeight) {
+function checkKey(evt) {
+    // Checks whether user has pressed `e`, `m`, or `h` for easy, medium
+    // and hard difficulties
+
+    switch (evt.keyCode) {
+        case 69:  // `e` for easy
             startGame("easy");
-        }
-
-        if (x >= mediumTopLeftX && x <= mediumTopLeftX + diffBoxWidth &&
-            y >= mediumTopLeftY && y <= mediumTopLeftY + diffBoxHeight) {
+            break;
+        case 77:  // `m` for medium
             startGame("medium");
-        }
-
-        if (x >= hardTopLeftX && x <= hardTopLeftX + diffBoxWidth &&
-            y >= hardTopLeftY && y <= hardTopLeftY + diffBoxHeight) {
+            break;
+        case 72:  // 'h' for hard
             startGame("hard");
-        }
+            break;
+        case 73:  // 'i' for secret insane mode
+            startGame("insane");
+            break;
     }
+}
 
-    function checkKey(evt) {
-        // Checks whether user has pressed `e`, `m`, or `h` for easy, medium
-        // and hard difficulties
+function startGame(difficulty) {
+    // Remove all event listeners and initialise game with specifiied
+    // difficulty
 
-        switch (evt.keyCode) {
-            case 69:  // `e` for easy
-                startGame("easy");
-                break;
-            case 77:  // `m` for medium
-                startGame("medium");
-                break;
-            case 72:  // 'h' for hard
-                startGame("hard");
-                break;
-            case 73:  // 'i' for secret insane mode
-                startGame("insane");
-                break;
-        }
-    }
+    window.removeEventListener("click", menuCheckClick, false);
+    window.removeEventListener("touchstart", checkTouch, false);
+    window.removeEventListener("keydown", checkKey, false);
+    window.removeEventListener("resize", resizeMenu, false);
 
-    function startGame(difficulty) {
-        // Remove all event listeners and initialise game with specifiied
-        // difficulty
-
-        window.removeEventListener("click", checkClick, false);
-        window.removeEventListener("touchstart", checkTouch, false);
-        window.removeEventListener("keydown", checkKey, false);
-        window.removeEventListener("resize", resizeMenu, false);
-
-        initialiseGame(difficulty);
-    }
+    initialiseGame(difficulty);
 }
 
 function drawIcon() {
@@ -432,6 +457,17 @@ function buildMaze() {
     }
 }
 
+function removeCounters() {
+    // Remove all current counters from the maze
+
+    for (var i = 0; i < m; i++) {
+        for (var j = 0; j < n; j++) {
+            // 16 is solution counter bit; 32 is random counter bit
+            maze[i][j] &= ~48;
+        }
+    }
+}
+
 function placeCounters() {
     // Place the random and solution counters on the maze
 
@@ -495,6 +531,9 @@ function placeSolutionCounters() {
 
     // Remove the first element, starting point, which is special
     cellStack.splice(0, 1);
+
+    // Reset solution total in case of game restart
+    solutionTotal = 0;
 
     // Mark all cells in the stack as solution
     for (var i = 0; i < cellStack.length; i += 2) {
@@ -692,7 +731,9 @@ function movePlayerKeyboard(evt) {
             return;
     }
 
-    movePlayer(canMove, newX, newY);
+    if (canMove) {
+        movePlayer(newX, newY);
+    }
 }
 
 function movePlayerTouch(evt) {
@@ -708,6 +749,14 @@ function movePlayerTouch(evt) {
     var newX;
     var newY;
     var canMove;
+
+    // If player pressed pause button, don't move
+    if (touchX >= PAUSE_OFFSET_X &&
+        touchX <= PAUSE_OFFSET_X + BOX_WIDTH &&
+        touchY >= menuCanvas.height - PAUSE_OFFSET_Y - BOX_HEIGHT &&
+        touchY <= menuCanvas.height - PAUSE_OFFSET_Y) {
+        return;
+    }
 
     if (touchY < 0.25 * mazeCanvas.height) {
         newX = playerPosX;
@@ -727,26 +776,26 @@ function movePlayerTouch(evt) {
         canMove = canMoveTo("right");
     }
 
-    movePlayer(canMove, newX, newY);
+    if (canMove) {
+        movePlayer(newX, newY);
+    }
 }
 
-function movePlayer(canMove, newX, newY) {
+function movePlayer(newX, newY) {
     // Make sure maze is unblurred
     unblurMaze();
 
-    if (canMove) {  // Can move
-        if (!hasStarted) {
-            createTimer();
-        }
-
-        hasStarted = true;
-
-        checkCounters(newX, newY);
-
-        drawAll(newX, newY);
-        playerPosX = newX;
-        playerPosY = newY;
+    if (!hasStarted) {
+        createTimer();
     }
+
+    hasStarted = true;
+
+    checkCounters(newX, newY);
+
+    drawAll(newX, newY);
+    playerPosX = newX;
+    playerPosY = newY;
 
     if (playerPosX === end[0] && playerPosY === end[1] &&
         hasCollectedAllCounters()) {
@@ -839,7 +888,14 @@ function restartGameKeyboard(evt) {
 }
 
 function restartGameTouch(evt) {
-    // Restart game upon user touching screen
+    // Restart game upon user touching screen, unless they pressed pause
+
+    if (touchX >= PAUSE_OFFSET_X &&
+        touchX <= PAUSE_OFFSET_X + BOX_WIDTH &&
+        touchY >= menuCanvas.height - PAUSE_OFFSET_Y - BOX_HEIGHT &&
+        touchY <= menuCanvas.height - PAUSE_OFFSET_Y) {
+        return;
+    }
 
     window.removeEventListener("keydown", restartGameKeyboard, false);
     window.removeEventListener("touchstart", restartGameTouch, false);
@@ -893,10 +949,10 @@ function drawMazeWalls() {
 
     // Draw the boundaries twice for consistent thickness with walls
     for (var i = 0; i < 2; i++) {
-        drawLine([cellWidth, 0], [m * cellWidth, 0]);
-        drawLine([0, 0], [0, n * cellHeight]);
-        drawLine([m * cellWidth, 0], [m * cellWidth, n * cellHeight]);
-        drawLine([0, n * cellHeight], [(m - 1) * cellWidth, n * cellHeight]);
+        drawLine(cellWidth, 0, m * cellWidth, 0, mazeContext);
+        drawLine(0, 0, 0, n * cellHeight, mazeContext);
+        drawLine(m * cellWidth, 0, m * cellWidth, n * cellHeight, mazeContext);
+        drawLine(0, n * cellHeight, (m - 1) * cellWidth, n * cellHeight, mazeContext);
     }
 
     // Draw the walls
@@ -960,34 +1016,38 @@ function drawCellWalls(cell) {
     var cellval = maze[cell[0]][cell[1]];
 
     if (cellval & 1) {  // Left wall present
-        drawLine([cell[0] * cellWidth, cell[1] * cellHeight],
-                 [cell[0] * cellWidth, (cell[1] + 1) * cellHeight]);
+        drawLine(cell[0] * cellWidth, cell[1] * cellHeight,
+                 cell[0] * cellWidth, (cell[1] + 1) * cellHeight,
+                 mazeContext);
     }
 
     if (cellval & 2) { // Bottom wall present
-        drawLine([cell[0] * cellWidth, (cell[1] + 1) * cellHeight],
-                 [(cell[0] + 1) * cellWidth, (cell[1] + 1) * cellHeight]);
+        drawLine(cell[0] * cellWidth, (cell[1] + 1) * cellHeight,
+                 (cell[0] + 1) * cellWidth, (cell[1] + 1) * cellHeight,
+                 mazeContext);
     }
 
     if (cellval & 4) { // Right wall present
-        drawLine([(cell[0] + 1) * cellWidth, cell[1] * cellHeight],
-                 [(cell[0] + 1) * cellWidth, (cell[1] + 1) * cellHeight]);
+        drawLine((cell[0] + 1) * cellWidth, cell[1] * cellHeight,
+                 (cell[0] + 1) * cellWidth, (cell[1] + 1) * cellHeight,
+                 mazeContext);
     }
 
     if (cellval & 8) { // Top wall present
-        drawLine([cell[0] * cellWidth, cell[1] * cellHeight],
-                 [(cell[0] + 1) * cellWidth, cell[1] * cellHeight]);
+        drawLine(cell[0] * cellWidth, cell[1] * cellHeight,
+                 (cell[0] + 1) * cellWidth, cell[1] * cellHeight,
+                 mazeContext);
     }
 }
 
-function drawLine(startPos, endPos) {
+function drawLine(startX, startY, endX, endY, context) {
     // Draws a line from point startPos = [startPosX, startPosY] to
-    // endPos = [endPosX, endPosY]
+    // endPos = [endPosX, endPosY] using context `context`
 
-    mazeContext.beginPath();
-    mazeContext.moveTo(startPos[0], startPos[1]);
-    mazeContext.lineTo(endPos[0], endPos[1]);
-    mazeContext.stroke();
+    context.beginPath();
+    context.moveTo(startX, startY);
+    context.lineTo(endX, endY);
+    context.stroke();
 }
 
 function drawRect(x, y, width, height, context, fillStyle, strokeStyle) {
@@ -1053,6 +1113,7 @@ function drawPlayer(x, y) {
 
 function drawStartMessage() {
     menuContext.font = "40px Arial";
+    menuContext.lineWidth = 5;
 
     if (touchCapable) {
         drawRect(0.5 * menuCanvas.width - 350, 0.5 * menuCanvas.height - 50,
@@ -1078,6 +1139,8 @@ function drawStartMessage() {
 }
 
 function drawWinMessage() {
+    menuContext.lineWidth = 5;
+
     drawRect(0.5 * menuCanvas.width - 350, 0.5 * menuCanvas.height - 50,
              700, 225,
              menuContext,
@@ -1105,6 +1168,8 @@ function drawWinMessage() {
 }
 
 function drawLostMessage() {
+    menuContext.lineWidth = 5;
+
     drawRect(0.5 * menuCanvas.width - 300, 0.5 * menuCanvas.height - 60,
              600, 200,
              menuContext,
@@ -1133,8 +1198,14 @@ function drawLostMessage() {
 function drawCounterTallies() {
     // Draws box stating number of counters picked up
 
-    if (solutionCounter != solutionTotal) {
-        menuContext.globalAlpha = 0.5;
+    menuContext.lineWidth = 5;
+
+    if (timeLeft <= 0) {
+        menuContext.globalAlpha = 1;
+    } else if (solutionCounter != solutionTotal) {
+        menuContext.globalAlpha = 0.25;
+    } else {
+        menuContext.globalAlpha = 0.75;
     }
 
     drawRect(menuCanvas.width - BOX_OFFSET_X, BOX_OFFSET_Y,
@@ -1149,8 +1220,12 @@ function drawCounterTallies() {
 
     menuContext.globalAlpha = 1;
 
-    if (randomCounter != randomTotal) {
-        menuContext.globalAlpha = 0.5;
+    if (timeLeft <= 0) {
+        menuContext.globalAlpha = 1;
+    } else if (randomCounter != randomTotal) {
+        menuContext.globalAlpha = 0.25;
+    } else {
+        menuContext.globalAlpha = 0.75;
     }
 
     drawRect(menuCanvas.width - BOX_OFFSET_X, BOX_HEIGHT + 2 * BOX_OFFSET_Y,
@@ -1169,16 +1244,25 @@ function drawTimer(time) {
     // Draws a timer displaying time
 
     menuContext.font = "50px Arial";
+    menuContext.lineWidth = 5;
+    menuContext.globalAlpha = 1;
 
     if (time <= 10 && time > 5) {
         menuContext.fillStyle = WARNING_FILL_COLOUR;
         menuContext.strokeStyle = WARNING_STROKE_COLOUR;
+        menuContext.globalAlpha = 0.5;
     } else if (time <= 5) {
         menuContext.fillStyle = DANGER_FILL_COLOUR;
         menuContext.strokeStyle = DANGER_STROKE_COLOUR;
+        menuContext.globalAlpha = 0.75;
     } else {
         menuContext.fillStyle = TIMER_FILL_COLOUR;
         menuContext.strokeStyle = TIMER_STROKE_COLOUR;
+        menuContext.globalAlpha = 0.25;
+    }
+
+    if (hasWon || hasLost) {
+        menuContext.globalAlpha = 1;
     }
 
     var minutesLeft = Math.floor(time / 60).toString();
@@ -1186,10 +1270,6 @@ function drawTimer(time) {
 
     if (secondsLeft.length === 1) {
         secondsLeft = "0" + secondsLeft;
-    }
-
-    if (!hasWon && !hasLost) {
-        menuContext.globalAlpha = 0.5;
     }
 
     drawRect(menuCanvas.width - BOX_OFFSET_X,
@@ -1219,162 +1299,6 @@ function unblurMaze() {
     mazeCanvas.style.filter = mazeCanvas.style.webkitFilter = "blur(0px)";
 }
 
-// ------------------------------------------
-// In-game menu brought up by pressing escape
-// ------------------------------------------
-
-function checkEscape(evt) {
-    // Check whether the user has brought up the in-game menu with Escape
-
-    if (evt.keyCode === 27) {  // Escape button
-        drawEscapeMenu();
-    }
-}
-
-function drawEscapeMenu() {
-    // Draws the in-game menu brought up when player presses escape
-
-    window.removeEventListener("keydown", checkEscape, false);
-
-    clearInterval(timerInterval);
-
-    clearCanvas();
-
-    drawMaze();
-    drawPlayer(playerPosX, playerPosY);
-    blurMaze();
-    drawIcon();
-
-    menuContext.font = "60px Arial";
-    menuContext.fillStyle = "black";
-    menuContext.strokeStyle = "black";
-    menuContext.fillText("PAUSED",
-                         0.5 * menuCanvas.width,
-                         0.25 * menuCanvas.height);
-
-    // Menu option sizes
-    var menuBoxWidth = 0.5 * menuCanvas.width;
-    var menuBoxHeight = 0.2 * menuCanvas.height - 10;
-
-    // Draw the menu option boxes
-    var menuResumeTopLeftX = 0.5 * (menuCanvas.width - menuBoxWidth);
-    var menuResumeTopLeftY = 0.4 * menuCanvas.height - 0.5 * menuBoxHeight;
-    drawRect(menuResumeTopLeftX, menuResumeTopLeftY,
-             menuBoxWidth, menuBoxHeight,
-             menuContext,
-             RANDOM_FILL_COLOUR, "black");
-
-    var menuRestartTopLeftX = 0.5 * (menuCanvas.width - menuBoxWidth);
-    var menuRestartTopLeftY = 0.6 * menuCanvas.height - 0.5 * menuBoxHeight;
-    drawRect(menuRestartTopLeftX, menuRestartTopLeftY,
-             menuBoxWidth, menuBoxHeight,
-             menuContext,
-             MESSAGE_FILL_COLOUR, "black");
-
-    var menuQuitTopLeftX = 0.5 * (menuCanvas.width - menuBoxWidth);
-    var menuQuitTopLeftY = 0.8 * menuCanvas.height - 0.5 * menuBoxHeight;
-    drawRect(menuQuitTopLeftX, menuQuitTopLeftY,
-             menuBoxWidth, menuBoxHeight,
-             menuContext,
-             PLAYER_COLOUR, "black");
-
-    menuContext.fillStyle = "black";
-    menuContext.fillText("(C)ontinue",
-                         0.5 * menuCanvas.width,
-                         0.4 * menuCanvas.height);
-    menuContext.fillText("(R)estart",
-                         0.5 * menuCanvas.width,
-                         0.6 * menuCanvas.height)
-    menuContext.fillText("(Q)uit",
-                         0.5 * menuCanvas.width,
-                         0.8 * menuCanvas.height);
-
-    // Remove the movement event listeners
-    window.removeEventListener("keydown", movePlayerKeyboard, false);
-    window.removeEventListener("keydown", drawEscapeMenu, false);
-    window.removeEventListener("touchstart", movePlayerTouch, false);
-    window.removeEventListener("resize", resizeMaze, false);
-
-    // Add menu event listeners
-    window.addEventListener("keydown", escapeMenuSelection, false);
-    window.addEventListener("resize", resizeEscapeMenu, false);
-}
-
-function escapeMenuSelection(evt) {
-    // Check whether player is selecting something from pause menu
-
-    switch (evt.keyCode) {
-        case 67:  // `c` for continue
-            unblurMaze();
-
-            // Continue the timer from where it was
-            createTimer(timeLeft);
-
-            drawAll(playerPosX, playerPosY);
-
-            // Remove the menu event listeners
-            window.removeEventListener("keydown", escapeMenuSelection, false);
-            window.removeEventListener("resize", resizeEscapeMenu);
-
-            // Add back the normal game event listeners
-            window.addEventListener("keydown", movePlayerKeyboard, false);
-            window.addEventListener("keydown", checkEscape, false);
-            window.addEventListener("touchstart", movePlayerTouch, false);
-            window.addEventListener("resize", resizeMaze, false);
-            break;
-        case 82:  // `r` for restart
-            unblurMaze();
-
-            // Reset game variables
-            playerPosX = playerPosY = 0;
-            hasStarted = hasWon = hasLost = false;
-            randomCounter = solutionCounter = 0;
-            timeLeft = INITIAL_TIME;
-
-            // Replace all the collected counters
-            placeSolutionCounters();
-            placeRandomCounters();
-
-            drawAll(playerPosX, playerPosY);
-
-            // Remove the menu event listeners
-            window.removeEventListener("keydown", escapeMenuSelection, false);
-            window.removeEventListener("resize", resizeEscapeMenu);
-
-            // Add back the normal game event listeners
-            window.addEventListener("keydown", movePlayerKeyboard, false);
-            window.addEventListener("keydown", checkEscape, false);
-            window.addEventListener("touchstart", movePlayerTouch, false);
-            window.addEventListener("resize", resizeMaze, false);
-
-            break;
-        case 81:  // `q` for quit
-            unblurMaze();
-
-            // Redraw the main menu, exiting the current game
-            drawMenu();
-
-            // Remove the menu event listeners
-            window.removeEventListener("keydown", escapeMenuSelection, false);
-            window.removeEventListener("resize", resizeEscapeMenu);
-
-            break;
-    }
-}
-
-function clearCanvas() {
-    // Clears the canvas by setting canvas width and height
-
-    mazeCanvas.width = mazeCanvas.width;
-    mazeCanvas.height = mazeCanvas.height;
-
-    menuCanvas.width = menuCanvas.width;
-    menuCanvas.height = menuCanvas.height;
-
-    menuContext.textAlign = mazeContext.textAlign = "center";
-    menuContext.textBaseline = mazeContext.textBaseline = "middle";
-}
-
 function drawAll(x, y) {
     // Redraws the whole maze, the controls and the player at position `x`, `y`
 
@@ -1382,6 +1306,7 @@ function drawAll(x, y) {
 
     drawMaze();
     drawPlayer(x, y);
+    drawPauseButton();
 
     if (touchCapable) {
         drawTouchControls();
@@ -1400,9 +1325,313 @@ function drawAll(x, y) {
     }
 }
 
+// ------------------------------------------
+// In-game menu brought up by pressing escape
+// ------------------------------------------
+
+function checkEscape(evt) {
+    // Check whether the user has brought up the in-game menu with Escape
+
+    if (evt.keyCode === 27) {  // Escape button
+        drawPauseMenu();
+    }
+}
+
+function drawPauseMenu() {
+    // Draws the in-game menu brought up when player presses escape
+
+    // Remove the pause event listeners
+    window.removeEventListener("keydown", checkEscape, false);
+    window.removeEventListener("click", checkPauseClick, false);
+    window.removeEventListener("touchstart", checkPauseTouch, false);
+
+    // Remove the movement event listeners
+    window.removeEventListener("keydown", movePlayerKeyboard, false);
+    window.removeEventListener("keydown", drawPauseMenu, false);
+    window.removeEventListener("touchstart", movePlayerTouch, false);
+    window.removeEventListener("resize", resizeMaze, false);
+
+    clearInterval(timerInterval);
+
+    clearCanvas();
+
+    drawMaze();
+    drawPlayer(playerPosX, playerPosY);
+    blurMaze();
+    drawIcon();
+
+    if (touchCapable) {
+        drawTouchControls();
+    }
+
+    menuContext.font = "60px Arial";
+    menuContext.fillStyle = "black";
+    menuContext.strokeStyle = "black";
+    menuContext.fillText("PAUSED",
+                         0.5 * menuCanvas.width,
+                         0.25 * menuCanvas.height);
+
+    // Menu option sizes
+    menuBoxWidth = 0.5 * menuCanvas.width;
+    menuBoxHeight = 0.2 * menuCanvas.height - 10;
+
+    // Draw the menu option boxes
+    menuContTopLeftX = 0.5 * (menuCanvas.width - menuBoxWidth);
+    menuContTopLeftY = 0.4 * menuCanvas.height - 0.5 * menuBoxHeight;
+    drawRect(menuContTopLeftX, menuContTopLeftY,
+             menuBoxWidth, menuBoxHeight,
+             menuContext,
+             RANDOM_FILL_COLOUR, "black");
+
+    menuRestartTopLeftX = 0.5 * (menuCanvas.width - menuBoxWidth);
+    menuRestartTopLeftY = 0.6 * menuCanvas.height - 0.5 * menuBoxHeight;
+    drawRect(menuRestartTopLeftX, menuRestartTopLeftY,
+             menuBoxWidth, menuBoxHeight,
+             menuContext,
+             MESSAGE_FILL_COLOUR, "black");
+
+    menuQuitTopLeftX = 0.5 * (menuCanvas.width - menuBoxWidth);
+    menuQuitTopLeftY = 0.8 * menuCanvas.height - 0.5 * menuBoxHeight;
+    drawRect(menuQuitTopLeftX, menuQuitTopLeftY,
+             menuBoxWidth, menuBoxHeight,
+             menuContext,
+             PLAYER_COLOUR, "black");
+
+    menuContext.fillStyle = "black";
+    menuContext.fillText("(C)ontinue",
+                         0.5 * menuCanvas.width,
+                         0.4 * menuCanvas.height);
+    menuContext.fillText("(R)estart",
+                         0.5 * menuCanvas.width,
+                         0.6 * menuCanvas.height)
+    menuContext.fillText("(Q)uit",
+                         0.5 * menuCanvas.width,
+                         0.8 * menuCanvas.height);
+
+    // Add menu event listeners
+    window.addEventListener("keydown", pauseMenuKeyboardSelection, false);
+    window.addEventListener("click", pauseMenuMouseSelection, false);
+    window.addEventListener("touchstart", pauseMenuTouchSelection, false);
+
+    // Canvas resize event listener
+    window.addEventListener("resize", resizePauseMenu, false);
+}
+
+function pauseMenuKeyboardSelection(evt) {
+    // Check whether player is selecting something from pause menu
+
+    switch (evt.keyCode) {
+        case 67:  // `c` for continue
+        case 27:  // Escape also unpauses
+            resumeGame();
+            break;
+        case 82:  // `r` for restart
+            restartCurrentGame();
+            break;
+        case 81:  // `q` for quit
+            quitGame();
+            break;
+    }
+}
+
+function pauseMenuMouseSelection(evt) {
+    // Check for clicking inside the continue, restart and quit boxes in the
+    // in-game menu
+
+    var clickX = evt.pageX;
+    var clickY = evt.pageY;
+
+    pauseMenuCheckPos(clickX, clickY);
+}
+
+function pauseMenuTouchSelection(evt) {
+    // Check for touching one of the continue, restart and quit boxes in the
+    // in-game menu
+
+    // We want to record only individual touches
+    evt.preventDefault();
+
+    var touchX = evt.targetTouches[0].pageX;
+    var touchY = evt.targetTouches[0].pageY;
+
+    pauseMenuCheckPos(touchX, touchY);
+}
+
+function pauseMenuCheckPos(x, y) {
+    // Check whether position (`x`,`y`) is within any option boxes
+
+    if (x >= menuContTopLeftX && x <= menuContTopLeftX + menuBoxWidth &&
+        y >= menuContTopLeftY && y <= menuContTopLeftY + menuBoxHeight) {
+        resumeGame();
+    }
+
+    if (x >= menuRestartTopLeftX && x <= menuRestartTopLeftX + menuBoxWidth &&
+        y >= menuRestartTopLeftY && y <= menuRestartTopLeftY + menuBoxHeight) {
+        restartCurrentGame();
+    }
+
+    if (x >= menuQuitTopLeftX && x <= menuQuitTopLeftX + menuBoxWidth &&
+        y >= menuQuitTopLeftY && y <= menuQuitTopLeftY + menuBoxHeight) {
+        quitGame();
+    }
+}
+
+function checkPauseClick(evt) {
+    // Check whether the player has clicked the pause button
+
+    var clickX = evt.pageX;
+    var clickY = evt.pageY;
+
+    checkPauseButton(clickX, clickY);
+}
+
+function checkPauseTouch(evt) {
+    // Check whether the player has touched the pause button
+
+    var touchX = evt.targetTouches[0].pageX;
+    var touchY = evt.targetTouches[0].pageY;
+
+    checkPauseButton(touchX, touchY);
+}
+
+function checkPauseButton(x, y) {
+    // Check whether point (`x`,`y`) is within the pause button
+
+    if (x >= PAUSE_OFFSET_X &&
+        x <= PAUSE_OFFSET_X + BOX_WIDTH &&
+        y >= menuCanvas.height - PAUSE_OFFSET_Y - BOX_HEIGHT &&
+        y <= menuCanvas.height - PAUSE_OFFSET_Y) {
+        drawPauseMenu();
+    }
+}
+
+function resumeGame() {
+    // Resume the game where the player left off
+    unblurMaze();
+
+    // Continue the timer from where it was if game is in progress
+    if (hasStarted && !hasLost && !hasWon) {
+        createTimer(timeLeft);
+    }
+
+    drawAll(playerPosX, playerPosY);
+
+    // Remove the menu event listeners
+    window.removeEventListener("keydown", pauseMenuKeyboardSelection, false);
+    window.removeEventListener("click", pauseMenuMouseSelection, false);
+    window.removeEventListener("touchstart", pauseMenuTouchSelection, false);
+
+    window.removeEventListener("resize", resizePauseMenu);
+
+    // Add back the normal game event listeners
+    window.addEventListener("keydown", movePlayerKeyboard, false);
+    window.addEventListener("touchstart", movePlayerTouch, false);
+
+    window.addEventListener("keydown", checkEscape, false);
+    window.addEventListener("click", checkPauseClick, false);
+    window.addEventListener("touchstart", checkPauseTouch, false);
+
+    window.addEventListener("resize", resizeMaze, false);
+}
+
+function restartCurrentGame() {
+    // Keep the current maze, but restart the game, replacing all counters
+
+    unblurMaze();
+
+    // Reset game variables
+    playerPosX = playerPosY = 0;
+    hasStarted = hasWon = hasLost = false;
+    randomCounter = solutionCounter = 0;
+    timeLeft = INITIAL_TIME;
+
+    // Replace all the collected counters
+    removeCounters();
+    placeCounters();
+
+    drawAll(playerPosX, playerPosY);
+
+    // Remove the menu event listeners
+    window.removeEventListener("keydown", pauseMenuKeyboardSelection, false);
+    window.removeEventListener("click", pauseMenuMouseSelection, false);
+    window.removeEventListener("touchstart", pauseMenuTouchSelection, false);
+    window.removeEventListener("resize", resizePauseMenu);
+
+    // Add back the normal game event listeners
+    window.addEventListener("keydown", movePlayerKeyboard, false);
+    window.addEventListener("touchstart", movePlayerTouch, false);
+
+    window.addEventListener("keydown", checkEscape, false);
+    window.addEventListener("click", checkPauseClick, false);
+    window.addEventListener("touchstart", checkPauseTouch, false);
+
+    window.addEventListener("resize", resizeMaze, false);
+}
+
+function quitGame() {
+    // Quit the current game and return to the main menu screen
+
+    unblurMaze();
+
+    // Redraw the main menu, exiting the current game
+    drawMenu();
+
+    // Remove the menu event listeners
+    window.removeEventListener("keydown", pauseMenuKeyboardSelection, false);
+    window.removeEventListener("click", pauseMenuMouseSelection, false);
+    window.removeEventListener("touchstart", pauseMenuTouchSelection, false);
+    window.removeEventListener("resize", resizePauseMenu);
+}
+
+function drawPauseButton() {
+    // Draws a small pause button in bottom left for cilcking/touching in
+    // place of Escape key
+
+    menuContext.globalAlpha = 0.5;
+
+    menuContext.fillStyle = END_FILL_COLOUR;
+    menuContext.strokeStyle = END_STROKE_COLOUR;
+    menuContext.lineWidth = 5;
+
+    drawRect(PAUSE_OFFSET_X,
+             menuCanvas.height - BOX_HEIGHT - PAUSE_OFFSET_Y,
+             BOX_WIDTH,
+             BOX_HEIGHT,
+             menuContext,
+             END_FILL_COLOUR, END_STROKE_COLOUR);
+
+    menuContext.lineWidth = 10;
+    drawLine(PAUSE_OFFSET_X + 0.33 * BOX_WIDTH,
+             menuCanvas.height - PAUSE_OFFSET_Y - 0.75 * BOX_HEIGHT,
+             PAUSE_OFFSET_X + 0.33 * BOX_WIDTH,
+             menuCanvas.height - PAUSE_OFFSET_Y - 0.25 * BOX_HEIGHT,
+             menuContext);
+    drawLine(PAUSE_OFFSET_X + 0.66 * BOX_WIDTH,
+             menuCanvas.height - PAUSE_OFFSET_Y - 0.75 * BOX_HEIGHT,
+             PAUSE_OFFSET_X + 0.66 * BOX_WIDTH,
+             menuCanvas.height - PAUSE_OFFSET_Y - 0.25 * BOX_HEIGHT,
+             menuContext);
+    menuContext.lineWidth = 1;
+
+    menuContext.globalAlpha = 1;
+}
+
 // ------------------------------
 // Dynamic sesizability functions
 // ------------------------------
+
+function clearCanvas() {
+    // Clears the canvas by setting canvas width and height
+
+    mazeCanvas.width = mazeCanvas.width;
+    mazeCanvas.height = mazeCanvas.height;
+
+    menuCanvas.width = menuCanvas.width;
+    menuCanvas.height = menuCanvas.height;
+
+    menuContext.textAlign = mazeContext.textAlign = "center";
+    menuContext.textBaseline = mazeContext.textBaseline = "middle";
+}
 
 function resizeMenu() {
     // Changes canvas size to be equal to window size
@@ -1422,7 +1651,7 @@ function resizeMenu() {
     drawMenu(playerPosX, playerPosY);
 }
 
-function resizeEscapeMenu() {
+function resizePauseMenu() {
     // Dynamically resize the escape menu
 
     menuCanvas.width = mazeCanvas.width = canvasDiv.clientWidth - 20;
@@ -1437,9 +1666,8 @@ function resizeEscapeMenu() {
     playerHeight = 0.85 * cellHeight;
     circleRad = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
 
-    drawEscapeMenu();
+    drawPauseMenu();
 }
-
 
 function resizeMaze() {
     // Changes canvas size to be equal to window size
@@ -1492,19 +1720,11 @@ function initialiseGame(difficulty) {
     playerHeight = 0.85 * cellHeight;
     circleRad = cellWidth >= cellHeight ? 0.2 * cellHeight : 0.2 * cellWidth;
 
-    playerPosX = 0;
-    playerPosY = 0;
-
-    hasStarted = false;
-    hasWon = false;
-    hasLost = false;
-
-    solutionCounter = 0;
-    solutionTotal = 0;
-
-    randomCounter = 0;
-    randomTotal = 0;
-
+    // Reset game variables
+    playerPosX = playerPosY = 0;
+    hasStarted = hasWon = hasLost = false;
+    solutionCounter = solutionTotal = 0;
+    randomCounter = randomTotal = 0;
     timeLeft = INITIAL_TIME;
 
     initialiseMaze();
@@ -1517,8 +1737,17 @@ function initialiseGame(difficulty) {
 
     drawAll(start[0], start[1]);
 
+    // Movement event listeners
     window.addEventListener("keydown", movePlayerKeyboard, false);
-    window.addEventListener("keydown", checkEscape, false);
     window.addEventListener("touchstart", movePlayerTouch, false);
+
+    // In-game menu event listeners
+    window.addEventListener("keydown", checkEscape, false);
+    window.addEventListener("click", checkPauseClick, false);
+    window.addEventListener("touchstart", checkPauseTouch, false);
+
+    // Canvas resize event listener
     window.addEventListener("resize", resizeMaze, false);
 }
+
+})();
