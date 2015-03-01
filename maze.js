@@ -892,10 +892,14 @@ function restartGameKeyboard(evt) {
 function restartGameTouch(evt) {
     // Restart game upon user touching screen, unless they pressed pause
 
+    var touchX = evt.targetTouches[0].pageX;
+    var touchY = evt.targetTouches[0].pageY;
+
     if (touchX >= PAUSE_OFFSET_X &&
         touchX <= PAUSE_OFFSET_X + BOX_WIDTH &&
         touchY >= menuCanvas.height - PAUSE_OFFSET_Y - BOX_HEIGHT &&
         touchY <= menuCanvas.height - PAUSE_OFFSET_Y) {
+        alert("You've pressed the pause button");
         return;
     }
 
