@@ -899,7 +899,6 @@ function restartGameTouch(evt) {
         touchX <= PAUSE_OFFSET_X + BOX_WIDTH &&
         touchY >= menuCanvas.height - PAUSE_OFFSET_Y - BOX_HEIGHT &&
         touchY <= menuCanvas.height - PAUSE_OFFSET_Y) {
-        alert("You've pressed the pause button");
         return;
     }
 
