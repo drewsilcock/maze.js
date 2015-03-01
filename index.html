@@ -9,15 +9,16 @@
   </head>
   <body>
       <div style="position: relative;" id="canvas-div">
-        <canvas id="canvas" style="position: absolute; left: 0; top: 0; z-index: 0;">
+        <canvas id="menu-canvas"
+            style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>
+        <canvas id="maze-canvas"
+            style="position: absolute; left: 0; top: 0; z-index: 0;">
             <p>Your browser does not support the HTML5 Canvas feature.</p>
         </canvas>
         <noscript>
             <p>JavaScript is not enabled. To play the game, you need to enable
             it.</p>
         </noscript>
-        <canvas id="menu-canvas"
-            style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>
       </div>
 
       <script type="text/javascript" src="maze.js"></script>
