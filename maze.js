@@ -30,9 +30,6 @@ menuCanvas.height = mazeCanvas.height = canvasDiv.clientHeight - 20;
 menuContext.textAlign = mazeContext.textAlign = "center";
 menuContext.textBaseline = mazeContext.textBaseline = "middle";
 
-var menuCanvas = document.getElementById("menu-canvas");
-var menuContext = menuCanvas.getContext("2d");
-
 // --------------
 // Maze variables
 // --------------
@@ -336,15 +333,11 @@ function wrapText(text, x, y, maxWidth, lineHeight) {
 function createArray(width, height) {
     // Creates an m by n array
 
-    var arr = new Array(width);
+    var array = [];
+    var column = [];
 
-    for (var i = 0; i < width; i++) {
-        arr[i] = new Array(height);
-
-        for (var j = 0; j < height; j++) {
-            arr[i][j] = 0;
-        }
-    }
+    while (column.push(0) < height) {}
+    while (array.push(column) < width) {}
 
     return arr;
 }
@@ -401,7 +394,7 @@ function buildMaze() {
     var visitedArray, validNeighbours, neighbour;
 
     // Stack to hold the cell locations
-    cellStack = new Array();
+    cellStack = [];
 
     totalCells = m * n;
 
@@ -691,6 +684,7 @@ function getRandomCell() {
 
     return [getRandomInt(0, m - 1), getRandomInt(0, n - 1)];
 }
+
 // -----------------------------
 // The player movement functions
 // -----------------------------
