@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="user-scalable=no">
+    <title> The Maze Game </title>
+    <link rel="stylesheet" type="text/css" href="stylesheet.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+  </head>
+  <body>
+      <div style="position: relative;" id="canvas-div">
+        <canvas id="menu-canvas"
+            style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>
+        <canvas id="maze-canvas"
+            style="position: absolute; left: 0; top: 0; z-index: 0;">
+            <p>Your browser does not support the HTML5 Canvas feature.</p>
+        </canvas>
+        <noscript>
+            <p>JavaScript is not enabled. To play the game, you need to enable
+            it.</p>
+        </noscript>
+      </div>
+
+      <script type="text/javascript" src="maze_oo.js"></script>
+  </body>
+</html>

@@ -927,9 +927,9 @@ function createTimer() {
     }, 1000);
 }
 
-// ----------------------
-// The drawing functions
-// ----------------------
+// --------------------------
+// The main drawing functions
+// --------------------------
 
 function drawMaze() {
     // The overarching function to draw the maze walls and counters
@@ -1728,8 +1728,7 @@ function initialiseGame(difficulty) {
 
     initialiseMaze();
     buildMaze();
-    placeSolutionCounters();
-    placeRandomCounters();
+    placeCounters();
 
     // Make sure the maze is unblurred
     unblurMaze();
